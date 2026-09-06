@@ -57,18 +57,24 @@ Source of truth: `supabase/migrations/20260906090000_create_tindahan.sql`.
 
 For a **different, new empty project**, apply that complete file once through SQL Editor or use the authenticated CLI. It contains a transaction, so a SQL error rolls back the migration. Do not rerun it on the configured development project: its tables already exist.
 
-Because the initial migration was applied in SQL Editor, register its version in CLI migration history before using CLI pushes on this project:
+The initial migration was applied in SQL Editor on 6 September and registered in CLI history on 7 September 2026. This checkout is now linked to the development project. Both local and remote histories show `20260906090000`; `db push --dry-run` reports the database is up to date. The repair only registered history; it did not rerun the schema or alter customer/ledger records.
+
+On another computer, sign in and link the checkout, then verify history:
 
 ```sh
 npx supabase login
 npx supabase link --project-ref bzkbndvmspnyjkuyaudr
-npx supabase migration repair 20260906090000 --status applied --linked
 npx supabase migration list --linked
+npx supabase db push --dry-run
 ```
 
-Only mark this version applied after confirming its schema already exists. CLI login and linking are user-completed steps; keep access tokens and database passwords private. No CLI migration-history repair was performed automatically during setup.
+If interactive login reports JSON-output errors when launched by an agent, use `npx supabase login --agent no --output-format text`. Keep access tokens and database passwords private; the CLI stores authentication outside the repository, and project link metadata under `supabase/.temp` is ignored by Git.
+
+The one-time repair used on this project was `npx supabase migration repair 20260906090000 --status applied --linked`. Do not repeat it as a routine setup step. For other manually applied migrations, repair history only after verifying the corresponding schema really exists. See the [official CLI reference](https://supabase.com/docs/reference/cli/getting-started) for the distinction between history repair and applying SQL.
 
 For later changes, create a new migration file, test it, inspect `npx supabase db push --dry-run`, then push to the intended development project. Never use a remote database reset as an ordinary migration step.
+
+Follow [the branch workflow](branching.md) for database changes too. Switching Git branches does not switch hosted projects. GitHub checks use local fictional data and do not perform hosted migrations.
 
 ## What the backend enforces
 
