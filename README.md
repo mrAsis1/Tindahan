@@ -4,6 +4,8 @@
 
 ## Run the application
 
+Development uses `develop` with short `codex/feature/`, `codex/fix/`, and `codex/chore/` task branches. `main` is the release baseline. See [the branch workflow](docs/branching.md) before starting a change.
+
 Use **Node.js 24.18.0** and **npm 11.16.0** (versions are recorded in `.nvmrc` and `package.json`). From this repository:
 
 ```sh
@@ -545,7 +547,7 @@ Work through the milestones one at a time. Use a simple checklist or optional Gi
 
 For each feature, implement the smallest complete flow, test it, and commit the working change before moving on. Check changes to financial rules against the balance tests. Keep generated files separate from hand-maintained source, and document any change that alters the meaning of stored records.
 
-Branches and pull requests are optional tools for organizing your own changes. No separate reviewer, team approval, or contributor process is required. Before a release, run the relevant checks and review your changes yourself against the acceptance scenarios below.
+Use the [branch workflow](docs/branching.md): task branches merge into `develop`, and tested releases merge into `main`. Review your own pull requests; no separate reviewer or team approval is required. Before a release, run the relevant checks and review your changes against the acceptance scenarios below.
 
 ### Key Acceptance Scenarios
 
