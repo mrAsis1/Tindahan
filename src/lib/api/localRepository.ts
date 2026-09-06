@@ -1,15 +1,11 @@
-import type { Customer, LedgerEntry, NewCustomer, NewEntry, StoreData } from '../../types';
+import type { LedgerEntry, NewCustomer, NewEntry, StoreData } from '../../types';
 import { assertLedger } from '../ledger';
 import { customerSchema, newEntrySchema, storeSchema } from '../validation';
 import { storeNow } from '../dates';
 import { createSeed } from './seed';
+import type { Repository } from './repository';
 
 export const STORAGE_KEY = 'tindahan.local-demo.v1';
-export interface Repository {
-  getData(): Promise<StoreData>;
-  createCustomer(input: NewCustomer, requestId: string): Promise<Customer>;
-  recordEntry(input: NewEntry, requestId: string): Promise<LedgerEntry>;
-}
 
 // TEMPORARY demo adapter. Replace at the provider boundary with authenticated
 // Supabase reads and atomic RPC writes. localStorage is not a production database.

@@ -4,6 +4,7 @@ import { Empty, EntryRow, Page, SummaryRow } from '../../components/ui';
 import { dateLabel, storeNow } from '../../lib/dates';
 import { balance, chronological, dailySummary } from '../../lib/ledger';
 import { money } from '../../lib/money';
+import { backendMode } from '../../lib/api/supabase';
 
 export function Home() {
   const { entries, customers } = useData();
@@ -48,10 +49,12 @@ export function Home() {
       <Link className="button plain" to="/daily-record">
         View daily record →
       </Link>
-      <p className="small muted">
-        Fictional starting records are dated 25 Aug–5 Sep 2026. Choose 5 September in Daily Record
-        to explore them.
-      </p>
+      {backendMode === 'local' && (
+        <p className="small muted">
+          Fictional starting records are dated 25 Aug–5 Sep 2026. Choose 5 September in Daily Record
+          to explore them.
+        </p>
+      )}
     </Page>
   );
 }

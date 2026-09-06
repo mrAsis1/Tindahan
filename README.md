@@ -1,6 +1,6 @@
 # Tindahan — Customer Utang Tracking Management Information System
 
-> **Implementation milestone 1 is now available:** a React + TypeScript + Vite application with working customer, utang, payment, history, and daily-record flows. It uses **temporary browser localStorage with fictional data**, not Supabase. The specification below remains the production roadmap; authentication, cloud persistence, and production financial writes are still planned. See [completed work and next steps](docs/progress.md).
+> **Implementation status:** the React + TypeScript + Vite app supports both the original **fictional local demo** and an opt-in **Supabase owner account** with persistent customer records and database-validated financial writes. The Supabase development project has its initial schema applied. See [Supabase setup](docs/supabase-setup.md) for owner sign-in and configuration, and [completed work and next steps](docs/progress.md) for verification and remaining work. The specification below remains the broader production roadmap.
 
 ## Run the application
 
@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173**. No environment variables, account, or database are needed for this milestone. Use the same address each time: browser storage is scoped to the origin, so `localhost` and `127.0.0.1` have separate demo notebooks.
+Open **http://127.0.0.1:5173**. With no `.env.local`, the app opens the local fictional demo. On this development computer, `.env.local` selects Supabase, so the app asks for your Tindahan owner login. Follow [the setup guide](docs/supabase-setup.md) to create it. Use the same address each time: browser sessions and local demo storage are scoped to the origin.
 
 ```sh
 npm run build              # Type-check and build to dist/
@@ -25,7 +25,7 @@ npm run format:check       # Check consistent source formatting
 
 The seed has six fictional customers and **₱4,850.00** outstanding. Maria Santos starts at **₱850.00**. In Daily Record, choose **5 September 2026** to see **₱650.00** new utang and **₱400.00** payments. New transactions default to the actual current date in `Asia/Manila`, so today's summary may initially be empty. The **Reset demo** control can restore the examples or start an empty notebook after confirmation.
 
-Changes survive refresh in this browser until its storage is cleared or the demo is reset. They are not backed up, authenticated, or synchronized to another device. Use fictional records only. The original standalone references remain unchanged in [`design/`](design/).
+In **local mode**, changes survive refresh in this browser until storage is cleared or the demo is reset; they are not authenticated, backed up, or synchronized. In **Supabase mode**, the notebook starts empty and customer/ledger data is stored in the database, scoped to the signed-in owner. Continue with fictional records during development. The original standalone references remain unchanged in [`design/`](design/).
 
 ---
 
