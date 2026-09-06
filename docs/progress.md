@@ -1,5 +1,24 @@
 # Tindahan progress
 
+## Development workflow and migration history — 7 September 2026
+
+### Completed
+
+- Preserved the clean existing `main` history at `94d0c8a`, confirmed it matches `origin/main`, and created `develop` from it.
+- Started this task on `codex/chore/development-workflow`. Documented feature/fix/chore branches into `develop`, releases into `main`, and optional release/hotfix branches created when needed in [the branch guide](branching.md).
+- Added a concise pull request template and GitHub Actions checks for formatting, build, unit/SQL tests, and mobile/desktop browser tests. Checks use local demo mode, pinned action revisions, and no Supabase credentials or automatic deployment.
+- Completed Supabase CLI browser login, linked this checkout to **Tindahan Development** (`bzkbndvmspnyjkuyaudr`), and verified that the five tables and four public RPCs exist through hosted schema type inspection.
+- Confirmed the initial migration was missing from remote history, marked `20260906090000` applied, and verified local/remote history matches. `db push --dry-run` returned `upToDate: true` with no migrations, seeds, or roles pending. The original SQL was not rerun; notebook data was preserved.
+- CLI login and ignored link metadata stay outside tracked source. Git branches do not create separate Supabase environments. Production hosting/database setup and GitHub branch protection remain separate future configuration.
+
+### Verification and next steps
+
+- Published `develop` and `codex/chore/development-workflow` to the existing private repository. [PR #1](https://github.com/mrAsis1/Tindahan/pull/1) targets `develop`; `main` remains at the existing baseline.
+- Local formatting and diff checks passed. The first [GitHub Actions run](https://github.com/mrAsis1/Tindahan/actions/runs/34052556904) passed the complete build, formatting, unit/PostgreSQL, and mobile/desktop browser checks on Linux. Integration proceeds through the reviewed pull request after its checks pass.
+- Next application work: audited corrections and owner account recovery, followed by concurrent hosted saves, uncertain retry handling, and physical-device testing.
+
+Earlier sections below record historical milestone status; migration-history setup is now complete.
+
 ## Supabase setup — 6 September 2026
 
 ### Completed
