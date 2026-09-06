@@ -1,5 +1,34 @@
 # Tindahan — Customer Utang Tracking Management Information System
 
+> **Implementation milestone 1 is now available:** a React + TypeScript + Vite application with working customer, utang, payment, history, and daily-record flows. It uses **temporary browser localStorage with fictional data**, not Supabase. The specification below remains the production roadmap; authentication, cloud persistence, and production financial writes are still planned. See [completed work and next steps](docs/progress.md).
+
+## Run the application
+
+Use **Node.js 24.18.0** and **npm 11.16.0** (versions are recorded in `.nvmrc` and `package.json`). From this repository:
+
+```sh
+npm ci
+npm run dev
+```
+
+Open **http://127.0.0.1:5173**. No environment variables, account, or database are needed for this milestone. Use the same address each time: browser storage is scoped to the origin, so `localhost` and `127.0.0.1` have separate demo notebooks.
+
+```sh
+npm run build              # Type-check and build to dist/
+npm run preview            # Preview the built app
+npm test                   # Money, ledger, validation, and local repository tests
+npx playwright install chromium  # One-time browser download
+npm run test:e2e            # Both flows and edge cases, mobile + desktop Chromium
+npm run check              # Build and run both test suites
+npm run format:check       # Check consistent source formatting
+```
+
+The seed has six fictional customers and **₱4,850.00** outstanding. Maria Santos starts at **₱850.00**. In Daily Record, choose **5 September 2026** to see **₱650.00** new utang and **₱400.00** payments. New transactions default to the actual current date in `Asia/Manila`, so today's summary may initially be empty. The **Reset demo** control can restore the examples or start an empty notebook after confirmation.
+
+Changes survive refresh in this browser until its storage is cleared or the demo is reset. They are not backed up, authenticated, or synchronized to another device. Use fictional records only. The original standalone references remain unchanged in [`design/`](design/).
+
+---
+
 A mobile-first system for sari-sari stores and small retail stores that records customer debts (utang), tracks payments, and keeps an organized digital transaction history in place of a paper notebook.
 
 **Document type:** Project specification and development plan  
