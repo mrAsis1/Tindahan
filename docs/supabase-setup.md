@@ -10,7 +10,7 @@ This computer's ignored `.env.local` selects this project using its public proje
 
 ## Finish your owner login
 
-The owner account on this development project has already been created, and the user reported successful sign-in. Steps 1–2 below are for a new project or another explicitly authorized owner; do not recreate the existing account.
+The owner account on this development project has already been created and signed in successfully. Its **Tindahan** notebook is created. The hosted customer/utang/payment check passed, including persistence after reload. **Demo Customer (setup check)** remains with three fictional entries (₱150 utang, ₱50 payment, ₱100 payment) and a final zero balance. Steps 1–4 below are for initial setup on a new project; do not recreate the existing account or notebook.
 
 1. In [Authentication → Users](https://supabase.com/dashboard/project/bzkbndvmspnyjkuyaudr/auth/users), choose **Add user → Create new user**.
 2. Enter your owner email and a password yourself. For this manually created development account, leave **Auto confirm user** checked. This form does not send an invitation email.
