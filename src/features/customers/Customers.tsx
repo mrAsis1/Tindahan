@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useData } from '../../app/data';
 import { CustomerRow, Empty, EntryRow, Field, Page } from '../../components/ui';
 import { balance, history } from '../../lib/ledger';
@@ -54,6 +54,7 @@ export function Customers({ search = false }: { search?: boolean }) {
 }
 
 export function CustomerDetail() {
+  const [params] = useSearchParams();
   const { id } = useParams();
   const { customers, entries } = useData();
   const [filter, setFilter] = useState('all');
@@ -61,13 +62,18 @@ export function CustomerDetail() {
   if (!customer)
     return (
       <Page title="Customer not found" back="/customers">
-        <Empty>This customer is not in this demo store.</Empty>
+        <Empty>This customer is not in your store.</Empty>
       </Page>
     );
   const current = balance(entries, customer.id);
   const rows = history(entries, customer.id).filter((e) => filter === 'all' || e.type === filter);
   return (
     <Page title="Customer History" back="/customers">
+      {params.get('corrected') === '1' && (
+        <p className="card note" role="status">
+          Correction saved. The original entry stays in history.
+        </p>
+      )}
       <section className={`card ${current ? 'debt' : 'note'}`}>
         <h2 className="customer-name">{customer.name}</h2>
         <p className="small muted">{customer.contactNumber || 'No contact number added'}</p>

@@ -1,5 +1,23 @@
 # Tindahan progress
 
+## Audited transaction corrections — 7 September 2026
+
+### Completed
+
+- Started from current `develop` on `codex/feature/transaction-corrections`.
+- Added customer-history correction links, void-only and void/replacement forms, a required reason, review/confirmation, retained failed-save details, and visible original/replacement history. Voided confirmations no longer present an old entry as active.
+- Updated balances and daily totals to exclude voided entries while retaining their history. Replacement chains keep their original ordering position within the effective time, including transactions saved in the same second; actual creation timestamps stay separate.
+- Added compatible local-demo correction records and a Supabase `correct_entry` adapter. The local storage key and original fictional data remain intact.
+- Added the new transactional migration `20260907090000_audited_corrections.sql`, preserving the first migration. Owner-scoped correction RPCs share normal-write locks, preserve original values, enforce the full historical ledger, reject conflicting retries, and atomically append correction/replacement audit events. Browser direct writes remain denied.
+- Added [correction instructions and rollout details](corrections.md).
+
+### Validation and next steps
+
+- Production build passed. **44 unit/PostgreSQL tests passed** across the full migration chain, including 10 new correction tests. **30 browser tests passed** across mobile and desktop, including 8 new correction scenarios. Reviewed the mobile history screenshot with original/replacement details.
+- Supabase dry run listed only the corrections migration; hosted application and live verification are pending.
+- Publish the feature branch and review its passing checks before merging into `develop`.
+- Next: owner account recovery, followed by real hosted concurrency/uncertain-response tests, physical-device checks, and production preparation.
+
 ## Development workflow and migration history — 7 September 2026
 
 ### Completed

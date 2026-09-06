@@ -13,10 +13,20 @@ export function Confirmation() {
   if (!entry)
     return (
       <Page title="Entry not found" back="/home">
-        <Empty>This transaction is not in the demo notebook.</Empty>
+        <Empty>This transaction is not in your notebook.</Empty>
       </Page>
     );
   const customer = customers.find((c) => c.id === entry.customerId)!;
+  if (entry.status === 'voided')
+    return (
+      <Page title="Voided entry" back={`/customers/${customer.id}`}>
+        <p>This original entry is excluded from balances.</p>
+        <p>Reason: {entry.voidReason}</p>
+        <Link className="button" to={`/transactions/${entry.id}/correct`}>
+          View correction
+        </Link>
+      </Page>
+    );
   const payment = entry.type === 'payment';
   const running = history(entries, customer.id).find((e) => e.id === id)!.runningBalance;
   return (
