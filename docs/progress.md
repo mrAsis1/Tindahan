@@ -13,7 +13,8 @@
 
 ### Verification and next steps
 
-- Workflow validation, publishing branches, and integration into `develop` are in progress.
+- Published `develop` and `codex/chore/development-workflow` to the existing private repository. [PR #1](https://github.com/mrAsis1/Tindahan/pull/1) targets `develop`; `main` remains at the existing baseline.
+- Local formatting and diff checks passed. The first [GitHub Actions run](https://github.com/mrAsis1/Tindahan/actions/runs/34052556904) passed the complete build, formatting, unit/PostgreSQL, and mobile/desktop browser checks on Linux. Integration proceeds through the reviewed pull request after its checks pass.
 - Next application work: audited corrections and owner account recovery, followed by concurrent hosted saves, uncertain retry handling, and physical-device testing.
 
 Earlier sections below record historical milestone status; migration-history setup is now complete.
