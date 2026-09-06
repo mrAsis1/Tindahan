@@ -87,7 +87,7 @@ Follow [the branch workflow](branching.md) for database changes too. Switching G
 - Successful writes and audit events commit together. Browser roles cannot directly insert, edit, or delete ledger/audit rows.
 - `get_notebook` returns the store, customers, and entries together in a consistent snapshot.
 
-Only creation is implemented. Audited void/replacement corrections, opening-balance import UI, pagination, backup restoration checks, and a production readiness review remain future work. The full snapshot is deliberately simple for the small development dataset; it is not the final large-ledger pagination strategy.
+Creation and audited void/replacement corrections are implemented. See [correction behavior and rollout](corrections.md) for the new migration and atomic ledger validation. Opening-balance import UI, pagination, backup restoration checks, and a production readiness review remain future work. The full snapshot is deliberately simple for the small development dataset; it is not the final large-ledger pagination strategy.
 
 ## Checks
 
