@@ -1,5 +1,37 @@
 # Tindahan progress
 
+## Supabase setup — 6 September 2026
+
+### Completed
+
+- Created the repository's Supabase CLI configuration, environment example, and initial transactional migration. The user created **Tindahan Development** (`bzkbndvmspnyjkuyaudr`) in Supabase and supplied its URL and public publishable key.
+- Verified that the hosted public schema was empty, then applied `supabase/migrations/20260906090000_create_tindahan.sql` through SQL Editor. Verified all five tables have RLS enabled, anonymous reads denied, and direct authenticated inserts denied.
+- Added owner profiles, one store per owner, customers, ledger entries, audit events, indexes, amount/date constraints, and customer/store composite foreign keys.
+- Added authenticated RPCs for store/customer creation, ledger writes, and one consistent notebook snapshot. Writes use an owner transaction lock and customer row lock, validate the full chronological ledger, preserve request IDs, reject conflicting retries, and commit audit events atomically.
+- Added explicit `local` / `supabase` modes, email/password owner sign-in, sign-out, private store setup, a Supabase repository adapter, account-scoped query keys, and cache clearing on account changes.
+- Stored only the project URL and public publishable key in ignored `.env.local`. Cloud mode never falls back to local writes, imports demo records, or exposes the Reset demo action.
+- The local demo and original designs remain available unchanged. Browser tests run separately on port 4178 and force local mode, so cloud records are untouched by that suite.
+- Added [setup instructions](supabase-setup.md), including the distinction between dashboard and owner accounts, Auth settings, and registering this manually applied migration in CLI history before future pushes.
+- The user created the development owner account and reported successful sign-in. Disabled public signup in hosted Auth; saved `http://127.0.0.1:5173` as the Site URL and `http://localhost:5173` as an allowed redirect.
+
+### Validation and remaining setup
+
+- Production build and TypeScript check passed.
+- **34 tests passed**: original 26 plus 8 tests executing the actual migration against embedded PostgreSQL, covering roles/RLS, owner isolation, restricted writes, idempotency, and historical payment rollback. Only the Supabase Auth users/uid interface is stubbed.
+- **22 browser regression tests passed** in mobile and desktop Chromium using local mode.
+- Hosted SQL migration and table security checks passed. The cloud sign-in screen is visible in the running app.
+- The first authenticated hosted utang/payment flow is awaiting verification in the user's signed-in browser. Passwords are entered only by the user and are not handled or stored by the agent.
+- Full hosted concurrency/network-failure tests, physical-device checks, recovery, corrections, and production readiness remain outstanding. Docker was unavailable; the embedded SQL suite is not a full local Supabase stack.
+- The schema was applied in SQL Editor. CLI login/link and migration-history repair remain manual follow-up steps documented in the setup guide; do not blindly push the already-applied initial migration.
+
+### Next steps
+
+1. Finish the hosted customer → utang → payment check and confirm balances survive refresh.
+2. Register the applied migration in CLI history before the next database change.
+3. Add audited corrections and account recovery, then test concurrent hosted saves and uncertain retries before a real-data pilot.
+
+The older milestone notes below describe the state at that milestone's completion, before Supabase was added.
+
 ## First implementation milestone — 6 September 2026
 
 Scope: a working mobile-first local demo for a solo developer. This is the first **implementation** milestone, separate from the specification's earlier requirements/prototype milestone numbering.

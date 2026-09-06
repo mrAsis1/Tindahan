@@ -8,13 +8,16 @@ import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
 import { queryClient } from './data';
 import { App } from './App';
+import { AuthGate } from '../features/auth/AuthGate';
 import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
+        <AuthGate>
+          {(ownerId, onSignOut) => <App key={ownerId} ownerId={ownerId} onSignOut={onSignOut} />}
+        </AuthGate>
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,

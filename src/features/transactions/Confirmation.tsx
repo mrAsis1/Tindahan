@@ -4,6 +4,7 @@ import { Empty, Page, SummaryRow } from '../../components/ui';
 import { history, signedAmount } from '../../lib/ledger';
 import { dateLabel, timeLabel } from '../../lib/dates';
 import { money } from '../../lib/money';
+import { backendMode } from '../../lib/api/supabase';
 
 export function Confirmation() {
   const { id } = useParams();
@@ -53,7 +54,8 @@ export function Confirmation() {
         Back to Home
       </Link>
       <p className="small muted">
-        Saved in this browser. For backdated entries, customer history shows today’s balance too.
+        {backendMode === 'local' ? 'Saved in this browser.' : 'Saved to your store account.'} For
+        backdated entries, customer history shows today’s balance too.
       </p>
     </Page>
   );

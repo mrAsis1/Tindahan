@@ -1,0 +1,4 @@
+-- Intentionally empty: do not create real owners, passwords, or financial data
+-- through a shared seed script. The existing local demo retains fictional data.
+-- For Supabase development, create your owner in Auth, then use the app to add
+-- fictional customers and transactions scoped to that signed-in owner.

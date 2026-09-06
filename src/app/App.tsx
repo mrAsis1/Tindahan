@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { DataContext, refreshData, repository, useStoreQuery } from './data';
+import { DataContext, refreshData, localRepository, useStoreQuery } from './data';
+import { backendMode } from '../lib/api/supabase';
+import { StoreSetup } from '../features/auth/AuthGate';
 import { Dialog, ErrorMessage, Page } from '../components/ui';
 import { Home } from '../features/dashboard/Home';
 import { Customers, CustomerDetail } from '../features/customers/Customers';
@@ -9,8 +11,16 @@ import { TransactionForm } from '../features/transactions/TransactionForm';
 import { Confirmation } from '../features/transactions/Confirmation';
 import { DailyRecord } from '../features/daily-record/DailyRecord';
 
-export function App() {
-  const query = useStoreQuery();
+export function App({
+  ownerId = 'local',
+  onSignOut,
+}: {
+  ownerId?: string;
+  onSignOut?: () => Promise<void>;
+}) {
+  const query = useStoreQuery(ownerId);
+  const cloud = backendMode === 'supabase';
+  const [signOutError, setSignOutError] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
   const [reset, setReset] = useState(false);
@@ -22,7 +32,7 @@ export function App() {
   async function resetData(empty: boolean) {
     setResetting(true);
     try {
-      await repository.reset(empty);
+      await localRepository.reset(empty);
       await refreshData();
       setReset(false);
       navigate('/home');
@@ -47,9 +57,11 @@ export function App() {
           <p>Find a customer, record what they owe, and keep every payment in one place.</p>
         </div>
         <p className="small">
-          Local demo · fictional records.
+          {cloud ? 'Your private store notebook.' : 'Local demo · fictional records.'}
           <br />
-          Your changes stay in this browser.
+          {cloud
+            ? 'Sign in to access your records across devices.'
+            : 'Your changes stay in this browser.'}
         </p>
       </aside>
       <div className={`app-shell ${hideNav ? 'without-nav' : ''}`}>
@@ -57,16 +69,35 @@ export function App() {
           Skip to content
         </a>
         <div className="demo-bar">
-          <span>Local demo · fictional data</span>
-          <button
-            onClick={() => {
-              setResetError('');
-              setReset(true);
-            }}
-          >
-            Reset demo
-          </button>
+          <span>
+            {cloud ? (query.data?.store?.name ?? 'Cloud notebook') : 'Local demo · fictional data'}
+          </span>
+          {cloud ? (
+            <button
+              onClick={async () => {
+                try {
+                  await onSignOut?.();
+                } catch (error) {
+                  setSignOutError(
+                    error instanceof Error ? error.message : 'Couldn’t sign out. Try again.',
+                  );
+                }
+              }}
+            >
+              Sign out
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                setResetError('');
+                setReset(true);
+              }}
+            >
+              Reset demo
+            </button>
+          )}
         </div>
+        <ErrorMessage message={signOutError} />
         {query.isPending ? (
           <main id="main" className="empty" role="status">
             Opening your notebook…
@@ -78,6 +109,8 @@ export function App() {
               Try again
             </button>
           </Page>
+        ) : cloud && !query.data.store ? (
+          <StoreSetup />
         ) : (
           <DataContext.Provider value={query.data}>
             <Routes>
@@ -108,7 +141,7 @@ export function App() {
             </Routes>
           </DataContext.Provider>
         )}
-        {!hideNav && (
+        {!hideNav && (!cloud || !!query.data?.store) && (
           <nav className="bottom-nav" aria-label="Main navigation">
             {[
               ['/home', '⌂', 'Home'],
@@ -125,7 +158,7 @@ export function App() {
             ))}
           </nav>
         )}
-        {reset && (
+        {!cloud && reset && (
           <Dialog
             title="Reset demo notebook?"
             onClose={() => {

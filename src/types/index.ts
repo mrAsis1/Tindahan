@@ -21,6 +21,7 @@ export interface LedgerEntry {
 
 export interface StoreData {
   version: 1;
+  store?: { id: string; name: string } | null;
   customers: Customer[];
   entries: LedgerEntry[];
 }

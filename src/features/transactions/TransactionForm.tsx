@@ -10,6 +10,7 @@ import { balance } from '../../lib/ledger';
 import { money, parseMoney } from '../../lib/money';
 import { storeNow } from '../../lib/dates';
 import { transactionSchema } from '../../lib/validation';
+import { backendMode } from '../../lib/api/supabase';
 
 type Values = z.infer<typeof transactionSchema>;
 export function TransactionForm({ payment = false }: { payment?: boolean }) {
@@ -186,7 +187,11 @@ export function TransactionForm({ payment = false }: { payment?: boolean }) {
         >
           {isSubmitting ? 'Saving…' : payment ? 'Record payment' : 'Save utang'}
         </button>
-        <p className="small muted">Saved only in this browser’s demo notebook.</p>
+        <p className="small muted">
+          {backendMode === 'local'
+            ? 'Saved only in this browser’s demo notebook.'
+            : 'Saves to your private store notebook. An internet connection is required.'}
+        </p>
       </form>
       {addingCustomer && (
         <Dialog title="New Customer" onClose={() => setAddingCustomer(false)}>
