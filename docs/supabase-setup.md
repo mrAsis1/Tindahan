@@ -59,6 +59,8 @@ For a **different, new empty project**, apply that complete file once through SQ
 
 The initial migration was applied in SQL Editor on 6 September and registered in CLI history on 7 September 2026. This checkout is now linked to the development project. Both local and remote histories show `20260906090000`; `db push --dry-run` reports the database is up to date. The repair only registered history; it did not rerun the schema or alter customer/ledger records.
 
+On 7 September, the CLI also applied `20260907090000_audited_corrections.sql`. Both versions now match local and hosted history, with no pending migrations. The hosted correction check preserved two voided utang versions and an active replacement on the fictional setup customer, whose current balance remains zero. See [corrections](corrections.md) for how to use the flow.
+
 On another computer, sign in and link the checkout, then verify history:
 
 ```sh
