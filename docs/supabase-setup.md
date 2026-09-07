@@ -47,7 +47,7 @@ For this owner-only development app, use email/password and keep public user reg
 
 For the configured development project, public signup has been disabled through the dashboard. Its Site URL is saved as `http://127.0.0.1:5173`, with `http://localhost:5173` also saved in the redirect allow list.
 
-Set **Authentication → URL Configuration → Site URL** to `http://127.0.0.1:5173` during development. If using both hostnames, add `http://localhost:5173` as a redirect URL. Update these URLs when deploying. Password recovery, public signup, invitation delivery, and custom SMTP are not implemented in the app yet.
+Password recovery is implemented through **Forgot password?** on the owner sign-in screen. Hosted Auth also allows the exact `/auth/reset-password` callback on `127.0.0.1` and `localhost` at ports 5173 and 5174. See [account recovery](account-recovery.md) for instructions, email delivery checks, and deployment settings. Public signup remains disabled; invitation delivery and custom SMTP setup remain future work.
 
 `supabase/config.toml` is local CLI configuration; it does not automatically update hosted Auth settings. Docker is required for a full local Supabase stack. It was not available during this setup, so automated SQL tests use embedded PostgreSQL instead.
 
@@ -102,6 +102,6 @@ npm run format:check
 
 SQL tests run the actual migration, PostgreSQL roles/RLS, and RPC functions through PGlite. They stub only Supabase's `auth.users` and `auth.uid()` contract. These tests do not replace hosted Auth, network failure, or real multi-connection concurrency tests.
 
-Browser regression tests force local demo mode on port **4178**, so they do not reset or alter your cloud notebook. Hosted checks require an owner to sign in interactively.
+Browser regression tests force local demo mode on port **4178**. Recovery tests use a fictional Supabase host with intercepted Auth responses on **4179**. Neither suite changes your cloud notebook or sends live email. Hosted checks require an owner to sign in interactively.
 
 Official references: [React Auth](https://supabase.com/docs/guides/auth/quickstarts/react), [API keys](https://supabase.com/docs/guides/getting-started/api-keys), [row-level security](https://supabase.com/docs/guides/database/postgres/row-level-security), [database functions](https://supabase.com/docs/guides/database/functions), [migration workflow](https://supabase.com/docs/guides/local-development/database-migrations).
