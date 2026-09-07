@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import { customerSchema, newEntrySchema, storeSchema } from '../validation';
+import { correctionSchema, customerSchema, newEntrySchema, storeSchema } from '../validation';
 import type { Repository } from './repository';
 
 export const backendMode = import.meta.env.VITE_DATA_BACKEND ?? 'local';
@@ -42,6 +42,16 @@ function rpcError(message: string, code?: string) {
 }
 
 export const supabaseRepository: Repository = {
+  async correctEntry(input, requestId) {
+    const values = correctionSchema.parse(input);
+    const { error } = await client().rpc('correct_entry', {
+      p_request_id: requestId,
+      p_entry_id: values.entryId,
+      p_reason: values.reason,
+      p_replacement: values.replacement,
+    });
+    if (error) throw rpcError(error.message, error.code);
+  },
   async getData() {
     const { data, error } = await client().rpc('get_notebook');
     if (error) throw rpcError(error.message, error.code);

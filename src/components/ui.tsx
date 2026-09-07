@@ -124,13 +124,43 @@ export function EntryRow({
           {dateLabel(entry.effectiveDate)} · {timeLabel(entry.effectiveTime)}
         </p>
         {runningBalance !== undefined && <p>Balance: {money(runningBalance)}</p>}
+        {entry.status === 'voided' && (
+          <>
+            <p>
+              <strong>Voided · excluded from balances</strong>
+            </p>
+            <p>Reason: {entry.voidReason}</p>
+            {entry.voidedAt && (
+              <p>
+                By {entry.voidedBy === 'local-demo' ? 'local demo owner' : 'store owner'} ·{' '}
+                {new Intl.DateTimeFormat('en-PH', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                  timeZone: 'Asia/Manila',
+                }).format(new Date(entry.voidedAt))}
+              </p>
+            )}
+          </>
+        )}
+        {!name && (
+          <Link className="small" to={`/transactions/${entry.id}/correct`}>
+            {entry.status === 'voided' ? 'View correction' : 'Correct entry'}
+          </Link>
+        )}
+        {!name && entry.replacesEntryId && (
+          <p>
+            <Link to={`/transactions/${entry.replacesEntryId}/correct`}>
+              Replaces earlier entry
+            </Link>
+          </p>
+        )}
       </div>
       <div className={`record-amount ${payment ? 'payment' : 'utang'}`}>
         <strong>
           {payment ? '−' : '+'}
           {money(entry.amountCentavos)}
         </strong>
-        <span>{label}</span>
+        <span>{entry.status === 'voided' ? `Voided ${label.toLowerCase()}` : label}</span>
       </div>
     </>
   );
@@ -159,7 +189,14 @@ export function Dialog({
     return () => dialog.close();
   }, []);
   return (
-    <dialog ref={ref} onCancel={onClose} aria-labelledby="dialog-title">
+    <dialog
+      ref={ref}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      aria-labelledby="dialog-title"
+    >
       <div className="dialog-head">
         <h2 id="dialog-title">{title}</h2>
         <button type="button" className="back" onClick={onClose} aria-label="Close dialog">

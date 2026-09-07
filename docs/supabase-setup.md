@@ -59,6 +59,8 @@ For a **different, new empty project**, apply that complete file once through SQ
 
 The initial migration was applied in SQL Editor on 6 September and registered in CLI history on 7 September 2026. This checkout is now linked to the development project. Both local and remote histories show `20260906090000`; `db push --dry-run` reports the database is up to date. The repair only registered history; it did not rerun the schema or alter customer/ledger records.
 
+On 7 September, the CLI also applied `20260907090000_audited_corrections.sql`. Both versions now match local and hosted history, with no pending migrations. The hosted correction check preserved two voided utang versions and an active replacement on the fictional setup customer, whose current balance remains zero. See [corrections](corrections.md) for how to use the flow.
+
 On another computer, sign in and link the checkout, then verify history:
 
 ```sh
@@ -87,7 +89,7 @@ Follow [the branch workflow](branching.md) for database changes too. Switching G
 - Successful writes and audit events commit together. Browser roles cannot directly insert, edit, or delete ledger/audit rows.
 - `get_notebook` returns the store, customers, and entries together in a consistent snapshot.
 
-Only creation is implemented. Audited void/replacement corrections, opening-balance import UI, pagination, backup restoration checks, and a production readiness review remain future work. The full snapshot is deliberately simple for the small development dataset; it is not the final large-ledger pagination strategy.
+Creation and audited void/replacement corrections are implemented. See [correction behavior and rollout](corrections.md) for the new migration and atomic ledger validation. Opening-balance import UI, pagination, backup restoration checks, and a production readiness review remain future work. The full snapshot is deliberately simple for the small development dataset; it is not the final large-ledger pagination strategy.
 
 ## Checks
 

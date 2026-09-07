@@ -6,6 +6,8 @@
 
 Development uses `develop` with short `codex/feature/`, `codex/fix/`, and `codex/chore/` task branches. `main` is the release baseline. See [the branch workflow](docs/branching.md) before starting a change.
 
+Customer history now supports [audited entry corrections](docs/corrections.md): void an incorrect entry with a reason, optionally replace it, and preserve the original in history. Both local demo and Supabase modes recheck historical balances.
+
 Use **Node.js 24.18.0** and **npm 11.16.0** (versions are recorded in `.nvmrc` and `package.json`). From this repository:
 
 ```sh

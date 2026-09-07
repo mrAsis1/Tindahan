@@ -17,6 +17,13 @@ export interface LedgerEntry {
   effectiveDate: string;
   effectiveTime: string;
   createdAt: string;
+  status?: 'active' | 'voided';
+  voidedAt?: string | null;
+  voidedBy?: string | null;
+  voidReason?: string | null;
+  replacesEntryId?: string | null;
+  orderCreatedAt?: string | null;
+  orderId?: string | null;
 }
 
 export interface StoreData {
@@ -24,6 +31,18 @@ export interface StoreData {
   store?: { id: string; name: string } | null;
   customers: Customer[];
   entries: LedgerEntry[];
+  corrections?: CorrectionRecord[];
+}
+
+export interface CorrectionInput {
+  entryId: string;
+  reason: string;
+  replacement: Pick<NewEntry, 'amountCentavos' | 'description' | 'effectiveDate'> | null;
+}
+export interface CorrectionRecord extends CorrectionInput {
+  requestId: string;
+  createdAt: string;
+  createdBy: string;
 }
 
 export type NewCustomer = Pick<Customer, 'name' | 'contactNumber' | 'identifyingNote'>;

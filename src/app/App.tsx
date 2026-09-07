@@ -9,6 +9,7 @@ import { Customers, CustomerDetail } from '../features/customers/Customers';
 import { NewCustomerPage } from '../features/customers/CustomerForm';
 import { TransactionForm } from '../features/transactions/TransactionForm';
 import { Confirmation } from '../features/transactions/Confirmation';
+import { CorrectionForm } from '../features/transactions/CorrectionForm';
 import { DailyRecord } from '../features/daily-record/DailyRecord';
 
 export function App({
@@ -26,7 +27,7 @@ export function App({
   const [reset, setReset] = useState(false);
   const [resetError, setResetError] = useState('');
   const [resetting, setResetting] = useState(false);
-  const hideNav = /\/(utang|payments)\/new|\/customers\/new|\/confirmation$/.test(
+  const hideNav = /\/(utang|payments)\/new|\/customers\/new|\/confirmation$|\/correct$/.test(
     location.pathname,
   );
   async function resetData(empty: boolean) {
@@ -130,6 +131,10 @@ export function App({
                 element={<TransactionForm key={`payment-${location.search}`} payment />}
               />
               <Route path="/transactions/:id/confirmation" element={<Confirmation />} />
+              <Route
+                path="/transactions/:id/correct"
+                element={<CorrectionForm key={location.pathname} />}
+              />
               <Route
                 path="*"
                 element={
