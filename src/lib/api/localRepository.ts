@@ -1,6 +1,6 @@
-import type { LedgerEntry, NewCustomer, NewEntry, StoreData } from '../../types';
+import type { CorrectionInput, LedgerEntry, NewCustomer, NewEntry, StoreData } from '../../types';
 import { assertLedger } from '../ledger';
-import { customerSchema, newEntrySchema, storeSchema } from '../validation';
+import { correctionSchema, customerSchema, newEntrySchema, storeSchema } from '../validation';
 import { storeNow } from '../dates';
 import { createSeed } from './seed';
 import type { Repository } from './repository';
@@ -65,6 +65,8 @@ export function createLocalRepository(storage: Pick<Storage, 'getItem' | 'setIte
       return write(() => {
         const values = newEntrySchema.parse(input);
         const data = read();
+        if (data.corrections?.some((c) => c.requestId === requestId))
+          throw new Error('This save ID was already used for a correction.');
         const existing = data.entries.find((e) => e.requestId === requestId);
         if (existing) {
           if (
@@ -84,6 +86,65 @@ export function createLocalRepository(storage: Pick<Storage, 'getItem' | 'setIte
         assertLedger(next);
         persist(next);
         return entry;
+      });
+    },
+    async correctEntry(input: CorrectionInput, requestId: string) {
+      return write(() => {
+        const values = correctionSchema.parse(input);
+        const data = read();
+        const retry = data.corrections?.find((c) => c.requestId === requestId);
+        if (retry) {
+          if (
+            retry.entryId !== values.entryId ||
+            retry.reason !== values.reason ||
+            JSON.stringify(retry.replacement) !== JSON.stringify(values.replacement)
+          )
+            throw new Error('This save ID was already used for different correction details.');
+          return;
+        }
+        if (data.entries.some((e) => e.id === requestId))
+          throw new Error('This save ID was already used for a transaction.');
+        const original = data.entries.find((e) => e.id === values.entryId);
+        if (!original) throw new Error('Entry not found in your store.');
+        if (original.status === 'voided')
+          throw new Error('This entry has already been voided. Refresh its history.');
+        const now = new Date().toISOString();
+        const entries = data.entries.map((e) =>
+          e.id === original.id
+            ? {
+                ...e,
+                status: 'voided' as const,
+                voidedAt: now,
+                voidedBy: 'local-demo',
+                voidReason: values.reason,
+              }
+            : e,
+        );
+        if (values.replacement)
+          entries.push({
+            ...original,
+            ...values.replacement,
+            id: requestId,
+            requestId,
+            createdAt: now,
+            status: 'active',
+            voidedAt: null,
+            voidedBy: null,
+            voidReason: null,
+            replacesEntryId: original.id,
+            orderCreatedAt: original.orderCreatedAt ?? original.createdAt,
+            orderId: original.orderId ?? original.id,
+          });
+        const next: StoreData = {
+          ...data,
+          entries,
+          corrections: [
+            ...(data.corrections ?? []),
+            { ...values, requestId, createdAt: now, createdBy: 'local-demo' },
+          ],
+        };
+        assertLedger(next);
+        persist(next);
       });
     },
     async reset(empty = false) {

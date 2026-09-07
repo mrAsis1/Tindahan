@@ -26,6 +26,17 @@ export const newEntrySchema = transactionSchema.omit({ amount: true }).extend({
   type: z.enum(['utang', 'payment', 'opening_balance']),
   amountCentavos: z.number().int().positive().max(MAX_CENTAVOS),
 });
+export const correctionSchema = z.object({
+  entryId: z.string().min(1),
+  reason: z
+    .string()
+    .trim()
+    .min(1, 'Enter a reason for this correction.')
+    .max(300, 'Use 300 characters or fewer.'),
+  replacement: newEntrySchema
+    .pick({ amountCentavos: true, description: true, effectiveDate: true })
+    .nullable(),
+});
 export const storeSchema = z.object({
   version: z.literal(1),
   customers: z.array(customerSchema.extend({ id: z.string().min(1), createdAt: z.iso.datetime() })),
@@ -35,6 +46,22 @@ export const storeSchema = z.object({
       requestId: z.string().min(1),
       createdAt: z.iso.datetime(),
       effectiveTime: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/),
+      status: z.enum(['active', 'voided']).optional(),
+      voidedAt: z.iso.datetime().nullable().optional(),
+      voidedBy: z.string().nullable().optional(),
+      voidReason: z.string().nullable().optional(),
+      replacesEntryId: z.string().nullable().optional(),
+      orderCreatedAt: z.iso.datetime().nullable().optional(),
+      orderId: z.string().nullable().optional(),
     }),
   ),
+  corrections: z
+    .array(
+      correctionSchema.extend({
+        requestId: z.string(),
+        createdAt: z.iso.datetime(),
+        createdBy: z.string(),
+      }),
+    )
+    .optional(),
 });
