@@ -2,6 +2,12 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { correctionSchema, customerSchema, newEntrySchema, storeSchema } from '../validation';
 import type { Repository } from './repository';
+import { recoveryLocation } from '../../features/auth/recoveryHelpers';
+
+export const initialRecovery =
+  typeof window === 'undefined'
+    ? { requested: false, hasError: false }
+    : recoveryLocation(window.location.href);
 
 export const backendMode = import.meta.env.VITE_DATA_BACKEND ?? 'local';
 const url = import.meta.env.VITE_SUPABASE_URL?.trim();
