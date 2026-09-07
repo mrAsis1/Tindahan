@@ -14,8 +14,9 @@
 ### Validation and next steps
 
 - Production build passed. **44 unit/PostgreSQL tests passed** across the full migration chain, including 10 new correction tests. **30 browser tests passed** across mobile and desktop, including 8 new correction scenarios. Reviewed the mobile history screenshot with original/replacement details.
-- Supabase dry run listed only the corrections migration; hosted application and live verification are pending.
-- Publish the feature branch and review its passing checks before merging into `develop`.
+- Applied the reviewed corrections migration to **Tindahan Development** through the CLI. Both migration versions match local/remote history; a subsequent dry run reports no pending changes.
+- Verified the hosted correction flow on **Demo Customer (setup check)**: replaced the fictional ₱150 utang with ₱175 (₱25 current balance), then corrected that replacement back to ₱150 (₱0 balance). Reloaded the hosted records and confirmed the preserved originals, reasons, owner/time labels, and replacement chain. The notebook now has five fixture entries: two voided utang versions, one active ₱150 utang, and the original ₱50/₱100 payments. No records were deleted.
+- Published `codex/feature/transaction-corrections` and opened [PR #2](https://github.com/mrAsis1/Tindahan/pull/2) into `develop`. GitHub's build, formatting, 44 unit/PostgreSQL tests, and 30 browser tests passed. Integration follows the reviewed pull request; `main` is unchanged.
 - Next: owner account recovery, followed by real hosted concurrency/uncertain-response tests, physical-device checks, and production preparation.
 
 ## Development workflow and migration history — 7 September 2026
