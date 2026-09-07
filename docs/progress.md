@@ -1,5 +1,24 @@
 # Tindahan progress
 
+## Owner password recovery — 7–8 September 2026
+
+### Completed
+
+- Continued from `develop` on `codex/feature/owner-recovery`, following the feature → pull request → develop workflow.
+- Added reset-email requests, generic account-existence confirmation, password validation, expired/rejected link handling, recovery callback routing, and return to sign-in after updating the password.
+- Recovery waits for the Auth SDK to process the callback before displaying account state. Callback parameters are removed, recovery does not load the notebook, and account query caches are cleared on exit. Failed sign-out after a successful update has a separate retry action.
+- Added four exact development callback URLs for ports 5173/5174 to hosted Auth. The CLI verification reports all config up to date. Existing signup, email, MFA, and database settings are preserved; no migration or ledger write was required.
+- Added [account recovery instructions](account-recovery.md). Supabase recovery is separate from the fictional local demo.
+
+### Validation and next steps
+
+- Production build and 46 unit/PostgreSQL tests passed locally. Added 22 recovery browser cases across mobile and desktop, alongside the existing 30 ledger/browser cases. The Auth cases use the installed SDK with fictional intercepted responses, not hosted credentials.
+- This Windows session could not launch Playwright Chromium (`spawn UNKNOWN`, before test code ran). [PR #3](https://github.com/mrAsis1/Tindahan/pull/3) passed formatting, build, 46 unit/PostgreSQL tests, and all 52 mobile/desktop browser tests on [GitHub's Linux runner](https://github.com/mrAsis1/Tindahan/actions/runs/34147365347). Integration follows the checked feature pull request into `develop`; `main` remains the release baseline.
+- The first Linux run caught same-tab callback handling and the SDK clearing a session after failed global sign-out. Fixed callback reinitialization and changed recovery sign-out to end other sessions before the current one, preserving a retry session when the first request fails. Added same-tab valid-link and cancel/sign-out regression cases.
+- The owner confirmed that the reset email arrived. Opening it on a phone produced “site can’t be reached” because the development redirect uses loopback (`127.0.0.1`), which points to the phone itself. The app is running on this computer at ports 5173 and 5174; complete the reset from email on this computer. A deployed HTTPS frontend is needed for normal phone recovery.
+- An owner-completed password reset and new-password sign-in remain unverified. No owner password was handled or changed by the agent.
+- Next: complete the private live recovery check, then hosted concurrency/uncertain-response tests, physical-device checks, and production email/hosting/backup preparation. Keep using fictional ledger data.
+
 ## Audited transaction corrections — 7 September 2026
 
 ### Completed

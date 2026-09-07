@@ -1,10 +1,25 @@
-import { useEffect, useState, type ReactNode, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type FormEvent } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { backendMode, configurationError, createStore, supabase } from '../../lib/api/supabase';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  backendMode,
+  configurationError,
+  createStore,
+  initialRecovery,
+  supabase,
+} from '../../lib/api/supabase';
 import { queryClient, refreshData } from '../../app/data';
 import { ErrorMessage, Field, Page } from '../../components/ui';
+import { RequestRecovery, ResetPassword } from './Recovery';
+import { FORGOT_PATH, RESET_PATH, recoveryLocation } from './recoveryHelpers';
 
-function SignIn({ onRetry }: { onRetry: () => void }) {
+function SignIn({
+  onSignedIn,
+  passwordUpdated,
+}: {
+  onSignedIn: () => void;
+  passwordUpdated: boolean;
+}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,7 +32,7 @@ function SignIn({ onRetry }: { onRetry: () => void }) {
       const result = await supabase!.auth.signInWithPassword({ email: email.trim(), password });
       if (result.error) throw result.error;
       setPassword('');
-      onRetry();
+      onSignedIn();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Couldn’t sign in. Try again.');
     } finally {
@@ -26,6 +41,11 @@ function SignIn({ onRetry }: { onRetry: () => void }) {
   }
   return (
     <Page title="Your store notebook" brand="TINDAHAN">
+      {passwordUpdated && (
+        <p className="card note" role="status">
+          Password updated. Sign in with your new password.
+        </p>
+      )}
       <p className="small muted">Sign in to your store account.</p>
       <form className="stack" onSubmit={submit}>
         <Field label="Email" id="email">
@@ -54,6 +74,9 @@ function SignIn({ onRetry }: { onRetry: () => void }) {
         </button>
         <p className="small muted">Use the owner account set up for this store.</p>
       </form>
+      <Link className="button plain" to={FORGOT_PATH}>
+        Forgot password?
+      </Link>
     </Page>
   );
 }
@@ -66,31 +89,63 @@ export function AuthGate({
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(backendMode === 'supabase');
   const [error, setError] = useState('');
-  const [retry, setRetry] = useState(0);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialNavigate = useRef(navigate);
+  const [recovering, setRecovering] = useState(initialRecovery.requested);
+  const [linkError, setLinkError] = useState(initialRecovery.hasError);
+  useEffect(() => {
+    if (!supabase) return;
+    // A second email link can change only the fragment in an already-open tab.
+    // Restart SDK initialization for that callback; its own fragment clearing
+    // has no callback parameters and therefore does not cause another reload.
+    function processNewCallback() {
+      const flags = recoveryLocation(window.location.href);
+      const hash = new URLSearchParams(window.location.hash.slice(1));
+      if (
+        flags.requested &&
+        (flags.hasError || hash.has('access_token') || hash.get('type') === 'recovery')
+      ) {
+        setLoading(true);
+        window.location.reload();
+      }
+    }
+    window.addEventListener('hashchange', processNewCallback);
+    return () => window.removeEventListener('hashchange', processNewCallback);
+  }, []);
   useEffect(() => {
     if (!supabase) return;
     let active = true;
     let authEventReceived = false;
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, next) => {
+    } = supabase.auth.onAuthStateChange((event, next) => {
       authEventReceived = true;
       if (active) {
         setSession(next);
-        setLoading(false);
+        if (event === 'PASSWORD_RECOVERY') setRecovering(true);
       }
     });
     void supabase.auth
-      .getSession()
-      .then(({ data, error: sessionError }) => {
-        if (!active || authEventReceived) return;
-        setError(sessionError?.message ?? '');
-        setSession(data.session);
+      .initialize()
+      .then(async ({ error: callbackError }) => {
+        if (!active) return;
+        if (callbackError) {
+          setLinkError(true);
+          setError('Couldn’t verify your sign-in link. Request a new link or sign in again.');
+        }
+        const { data, error: sessionError } = await supabase!.auth.getSession();
+        if (!active) return;
+        if (sessionError) setError(sessionError.message);
+        else if (!callbackError) setError('');
+        if (!authEventReceived) setSession(data.session);
         setLoading(false);
+        if (initialRecovery.requested) initialNavigate.current(RESET_PATH, { replace: true });
       })
       .catch(() => {
         if (active) {
           setError('Couldn’t check your session. Try again.');
+          setLinkError(true);
           setLoading(false);
         }
       });
@@ -98,7 +153,7 @@ export function AuthGate({
       active = false;
       subscription.unsubscribe();
     };
-  }, [retry]);
+  }, []);
   // Do not retain another owner's notebook in the query cache on account changes.
   useEffect(() => {
     if (backendMode === 'local') return;
@@ -117,7 +172,20 @@ export function AuthGate({
       </div>
     );
   if (backendMode === 'local') return children('local');
-  if (session)
+  const recoveryPage =
+    recovering || location.pathname === RESET_PATH || location.pathname === FORGOT_PATH;
+  async function exitRecovery(updated = false) {
+    if (session) {
+      const { error: signOutError } = await supabase!.auth.signOut({ scope: 'local' });
+      if (signOutError) throw signOutError;
+    }
+    queryClient.removeQueries({ queryKey: ['store'] });
+    setRecovering(false);
+    setLinkError(false);
+    setError('');
+    navigate('/home', { replace: true, state: { passwordUpdated: updated } });
+  }
+  if (session && !recoveryPage && !loading)
     return children(session.user.id, async () => {
       const { error } = await supabase!.auth.signOut({ scope: 'local' });
       if (error) throw error;
@@ -133,8 +201,30 @@ export function AuthGate({
           </p>
         ) : (
           <>
-            <ErrorMessage message={error} />
-            <SignIn onRetry={() => setRetry((v) => v + 1)} />
+            {location.pathname === FORGOT_PATH ? (
+              <RequestRecovery onExit={() => exitRecovery()} />
+            ) : recoveryPage ? (
+              <ResetPassword
+                session={session}
+                linkError={linkError}
+                onExit={() => exitRecovery()}
+                onComplete={() => {
+                  queryClient.removeQueries({ queryKey: ['store'] });
+                  setRecovering(false);
+                  setLinkError(false);
+                  setError('');
+                  navigate('/home', { replace: true, state: { passwordUpdated: true } });
+                }}
+              />
+            ) : (
+              <>
+                <ErrorMessage message={error} />
+                <SignIn
+                  onSignedIn={() => setError('')}
+                  passwordUpdated={location.state?.passwordUpdated === true}
+                />
+              </>
+            )}
           </>
         )}
       </div>
