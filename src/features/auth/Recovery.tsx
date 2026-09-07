@@ -125,10 +125,23 @@ export function ResetPassword({
   const [updated, setUpdated] = useState(false);
   const [busy, setBusy] = useState(false);
   const saving = useRef(false);
+  const otherSessionsEnded = useRef(false);
   async function finish() {
     // The password may already be changed when sign-out fails. Keep that result
     // separate, so a retry only finishes sign-out instead of changing it again.
-    const { error: signOutError } = await supabase!.auth.signOut({ scope: 'global' });
+    // The SDK clears this session even on a failed global/local logout. End
+    // other sessions first so a failed remote request retains a session to retry.
+    if (!otherSessionsEnded.current) {
+      const { error: otherError } = await supabase!.auth.signOut({ scope: 'others' });
+      if (otherError) {
+        setError(
+          'Your password was updated, but sign-out did not finish. Try finishing sign-out again.',
+        );
+        return;
+      }
+      otherSessionsEnded.current = true;
+    }
+    const { error: signOutError } = await supabase!.auth.signOut({ scope: 'local' });
     if (signOutError) {
       setError(
         'Your password was updated, but sign-out did not finish. Try finishing sign-out again.',
