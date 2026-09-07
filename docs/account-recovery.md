@@ -29,7 +29,7 @@ No SQL migration is needed. Public signup remains disabled. CLI configuration is
 
 `src/features/auth/Recovery.tsx` uses the Supabase SDK's reset-email and password-update methods. `AuthGate.tsx` waits for Auth initialization, handles the recovery event, and keeps recovery navigation separate from notebook loading. The current browser client uses the SDK's implicit callback flow and persisted session. Only URL routing/error flags are captured by app code; the SDK handles tokens. Callback parameters are removed from the address bar after initialization. An authenticated session is required to change a password.
 
-After a successful update, global sign-out revokes refresh sessions and clears the current session. Already-issued access tokens can remain valid until expiry; this is not an instant revocation guarantee for every device.
+After a successful update, the app signs out other sessions first, then the current session. This keeps the current session available to retry if the first request fails. Already-issued access tokens can remain valid until expiry; this is not an instant revocation guarantee for every device.
 
 Run `npm run build`, `npm test`, and `npm run test:e2e`. Browser checks use local mode on 4178 and a fictional Supabase host with intercepted Auth responses on 4179. They exercise the installed SDK, callback handling, reload, rejected links, validation, sign-out retry, and signing in with the new password. They send no live email and change no hosted password.
 

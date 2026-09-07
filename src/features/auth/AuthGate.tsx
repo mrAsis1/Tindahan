@@ -11,7 +11,7 @@ import {
 import { queryClient, refreshData } from '../../app/data';
 import { ErrorMessage, Field, Page } from '../../components/ui';
 import { RequestRecovery, ResetPassword } from './Recovery';
-import { FORGOT_PATH, RESET_PATH } from './recoveryHelpers';
+import { FORGOT_PATH, RESET_PATH, recoveryLocation } from './recoveryHelpers';
 
 function SignIn({
   onSignedIn,
@@ -94,6 +94,25 @@ export function AuthGate({
   const initialNavigate = useRef(navigate);
   const [recovering, setRecovering] = useState(initialRecovery.requested);
   const [linkError, setLinkError] = useState(initialRecovery.hasError);
+  useEffect(() => {
+    if (!supabase) return;
+    // A second email link can change only the fragment in an already-open tab.
+    // Restart SDK initialization for that callback; its own fragment clearing
+    // has no callback parameters and therefore does not cause another reload.
+    function processNewCallback() {
+      const flags = recoveryLocation(window.location.href);
+      const hash = new URLSearchParams(window.location.hash.slice(1));
+      if (
+        flags.requested &&
+        (flags.hasError || hash.has('access_token') || hash.get('type') === 'recovery')
+      ) {
+        setLoading(true);
+        window.location.reload();
+      }
+    }
+    window.addEventListener('hashchange', processNewCallback);
+    return () => window.removeEventListener('hashchange', processNewCallback);
+  }, []);
   useEffect(() => {
     if (!supabase) return;
     let active = true;

@@ -37,6 +37,7 @@ async function fakeAuth(
     requests: [] as { email: string; redirect: string | null }[],
     updates: 0,
     logouts: 0,
+    logoutScopes: [] as string[],
     notebookReads: 0,
     password: 'Old-fictional-password',
   };
@@ -67,7 +68,7 @@ async function fakeAuth(
     }
     if (url.pathname === '/auth/v1/logout') {
       calls.logouts++;
-      expect(url.searchParams.get('scope')).toBe('global');
+      calls.logoutScopes.push(url.searchParams.get('scope')!);
       if (options.failLogoutOnce && calls.logouts === 1)
         return json({ msg: 'Temporary failure' }, 500);
       return route.fulfill({ status: 204 });
@@ -163,7 +164,7 @@ test('validates passwords, survives reload, updates once, signs out and accepts 
   await page.getByRole('button', { name: 'Update password' }).click();
   await expect(page.getByRole('status')).toContainText('Password updated');
   expect(calls.updates).toBe(1);
-  expect(calls.logouts).toBe(1);
+  expect(calls.logoutScopes).toEqual(['others', 'local']);
   expect(calls.notebookReads).toBe(0);
   await page.getByLabel('Email', { exact: true }).fill(owner.email);
   await page.getByLabel('Password', { exact: true }).fill('Old-fictional-password');
@@ -226,5 +227,27 @@ test('retries failed sign-out without changing the password twice', async ({ pag
   await page.getByRole('button', { name: 'Finish signing out' }).click();
   await expect(page.getByRole('status')).toContainText('Password updated');
   expect(calls.updates).toBe(1);
-  expect(calls.logouts).toBe(2);
+  expect(calls.logoutScopes).toEqual(['others', 'others', 'local']);
+});
+
+test('processes a new valid recovery link in an already-open reset tab', async ({ page }) => {
+  const calls = await fakeAuth(page);
+  await page.goto('/auth/reset-password');
+  await expect(page.getByRole('heading', { name: 'Reset link unavailable' })).toBeVisible();
+  await page.goto(callback());
+  await expect(page.getByRole('heading', { name: 'Choose a new password' })).toBeVisible();
+  await expect(page).toHaveURL('http://127.0.0.1:4179/auth/reset-password');
+  expect(calls.notebookReads).toBe(0);
+});
+
+test('cancels recovery and signs out without updating the password', async ({ page }) => {
+  const calls = await fakeAuth(page);
+  await page.goto(callback());
+  await page.getByRole('button', { name: 'Cancel and sign out' }).click();
+  await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
+  expect(calls.updates).toBe(0);
+  expect(calls.logoutScopes).toEqual(['local']);
+  expect(calls.notebookReads).toBe(0);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
 });
