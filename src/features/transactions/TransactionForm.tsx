@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { refreshData, repository, useData } from '../../app/data';
+import { queryClient, repository, useData } from '../../app/data';
 import { Dialog, ErrorMessage, Field, Page, SummaryRow } from '../../components/ui';
 import { CustomerForm } from '../customers/CustomerForm';
 import { balance } from '../../lib/ledger';
@@ -19,6 +19,10 @@ export function TransactionForm({ payment = false }: { payment?: boolean }) {
   const [params] = useSearchParams();
   const [addingCustomer, setAddingCustomer] = useState(false);
   const requestId = useRef(crypto.randomUUID());
+  const attemptedValues = useRef<string | null>(null);
+  const savedEntryId = useRef<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  const saving = useRef(false);
   const {
     register,
     handleSubmit,
@@ -38,7 +42,7 @@ export function TransactionForm({ payment = false }: { payment?: boolean }) {
   const customerId = watch('customerId');
   const current = balance(data.entries, customerId);
   const amount = parseMoney(watch('amount'));
-  const overpaid = payment && amount !== null && amount > current;
+  const overpaid = payment && !retrying && amount !== null && amount > current;
   const customer = data.customers.find((c) => c.id === customerId);
   return (
     <Page
@@ -54,31 +58,59 @@ export function TransactionForm({ payment = false }: { payment?: boolean }) {
         className="stack"
         noValidate
         onSubmit={handleSubmit(async (values) => {
-          if (isSubmitting) return;
-          if (payment && parseMoney(values.amount)! > current) {
+          if (saving.current) return;
+          const payload = JSON.stringify(values);
+          const sameAttempt = attemptedValues.current === payload;
+          if (attemptedValues.current && !sameAttempt) {
+            setError('root', {
+              message:
+                'Keep the original details when retrying. Check the customer history before starting a different entry.',
+            });
+            return;
+          }
+          if (!sameAttempt && payment && parseMoney(values.amount)! > current) {
             setError('amount', { message: 'Payment is higher than the remaining balance.' });
             return;
           }
+          saving.current = true;
+          attemptedValues.current = payload;
           try {
-            const entry = await repository.recordEntry(
-              {
-                customerId: values.customerId,
-                type: payment ? 'payment' : 'utang',
-                amountCentavos: parseMoney(values.amount)!,
-                description: values.description,
-                effectiveDate: values.effectiveDate,
-              },
-              requestId.current,
-            );
-            await refreshData();
-            navigate(`/transactions/${entry.id}/confirmation`, { replace: true });
+            if (!savedEntryId.current) {
+              const entry = await repository.recordEntry(
+                {
+                  customerId: values.customerId,
+                  type: payment ? 'payment' : 'utang',
+                  amountCentavos: parseMoney(values.amount)!,
+                  description: values.description,
+                  effectiveDate: values.effectiveDate,
+                },
+                requestId.current,
+              );
+              savedEntryId.current = entry.id;
+            }
+            await queryClient.invalidateQueries({ queryKey: ['store'] }, { throwOnError: true });
+            navigate(`/transactions/${savedEntryId.current}/confirmation`, { replace: true });
           } catch (error) {
+            // Validation/access failures roll back the RPC transaction. A lost
+            // connection has an uncertain result, so preserve its exact attempt.
+            const rejected =
+              !savedEntryId.current &&
+              (backendMode === 'local' ||
+                (error instanceof Error &&
+                  'code' in error &&
+                  typeof error.code === 'string' &&
+                  /^(P0001|42501|22...|23...)$/.test(error.code)));
+            if (rejected) attemptedValues.current = null;
+            setRetrying(!rejected);
             setError('root', {
-              message:
-                error instanceof Error
+              message: savedEntryId.current
+                ? 'Your entry was saved, but the notebook could not refresh. Retry to load the confirmation; this will not save another entry.'
+                : error instanceof Error
                   ? error.message
                   : 'Couldn’t save. Your details are still here—try again.',
             });
+          } finally {
+            saving.current = false;
           }
         })}
       >
@@ -112,7 +144,10 @@ export function TransactionForm({ payment = false }: { payment?: boolean }) {
         )}
         {payment && customer && current === 0 && (
           <p className="note">
-            This customer is fully paid. Add utang before recording another payment.
+            This customer is fully paid.{' '}
+            {retrying
+              ? 'Retry checks whether your original payment was recorded.'
+              : 'Add utang before recording another payment.'}
           </p>
         )}
         <Field
@@ -160,7 +195,7 @@ export function TransactionForm({ payment = false }: { payment?: boolean }) {
             {...register('effectiveDate')}
           />
         </Field>
-        {payment && customer && (
+        {payment && customer && !retrying && (
           <div className="note" aria-live="polite">
             <SummaryRow label="Payment received" value={money(amount ?? 0)} tone="payment" />
             {overpaid ? (
@@ -183,10 +218,22 @@ export function TransactionForm({ payment = false }: { payment?: boolean }) {
         <ErrorMessage message={errors.root?.message} />
         <button
           className={`button ${payment ? '' : 'orange'}`}
-          disabled={isSubmitting || (payment && !!customer && current === 0)}
+          disabled={isSubmitting || (!retrying && payment && !!customer && current === 0)}
         >
-          {isSubmitting ? 'Saving…' : payment ? 'Record payment' : 'Save utang'}
+          {isSubmitting
+            ? 'Saving…'
+            : retrying
+              ? 'Retry save'
+              : payment
+                ? 'Record payment'
+                : 'Save utang'}
         </button>
+        {retrying && (
+          <p className="small muted">
+            Keep these details to retry the same save. Before leaving this form, check the customer
+            history to avoid entering it twice.
+          </p>
+        )}
         <p className="small muted">
           {backendMode === 'local'
             ? 'Saved only in this browser’s demo notebook.'
