@@ -1,5 +1,16 @@
 # Tindahan progress
 
+## Hosted save validation — 9 September 2026
+
+- Started from current `develop` on `codex/feature/hosted-save-validation`; original designs and migrations preserved.
+- Recorded the owner's confirmation that the live password reset and new-password sign-in worked on 8 September. No owner password was handled by the agent.
+- Added an opt-in CLI harness for the development database. All three hosted checks passed: competing payments cannot overpay, simultaneous duplicate requests create one entry/audit, and retries after discarded committed responses return the original while conflicting payloads are rejected. Observed distinct PostgreSQL backends and lock waits under the authenticated database role.
+- Five clearly labeled fictional customers remain from two runs, all verified at zero balance. No records were deleted. See [hosted validation results and fixture IDs](hosted-save-validation.md).
+- Fixed utang/payment retry handling after lost responses and failed post-save refreshes. Confirmed writes retry only the refresh; uncertain writes retain the original details/request ID even after the displayed balance changes. Confirmed validation rejections still allow editing. Cached forms remain mounted on background refresh errors.
+- Added eight mobile/desktop cloud browser cases using intercepted HTTP responses, bringing the browser suite to 60 cases. Production build and 46 unit/PostgreSQL tests passed; final browser/CI results are recorded with the feature pull request.
+- Hosted checks use the Management API plus authenticated-role RPCs, not end-to-end hosted Auth/PostgREST browser calls. Browser failure tests use a fictional API. Open-form retry state is not persisted across reload/navigation; check history before starting another uncertain save. No offline queue or backend migration was added.
+- Next: publish a development frontend URL for phone testing, then physical-device checks, production email setup, backup restoration, and pilot performance work.
+
 ## Owner password recovery — 7–8 September 2026
 
 ### Completed
@@ -16,8 +27,8 @@
 - This Windows session could not launch Playwright Chromium (`spawn UNKNOWN`, before test code ran). [PR #3](https://github.com/mrAsis1/Tindahan/pull/3) passed formatting, build, 46 unit/PostgreSQL tests, and all 52 mobile/desktop browser tests on [GitHub's Linux runner](https://github.com/mrAsis1/Tindahan/actions/runs/34147365347). Integration follows the checked feature pull request into `develop`; `main` remains the release baseline.
 - The first Linux run caught same-tab callback handling and the SDK clearing a session after failed global sign-out. Fixed callback reinitialization and changed recovery sign-out to end other sessions before the current one, preserving a retry session when the first request fails. Added same-tab valid-link and cancel/sign-out regression cases.
 - The owner confirmed that the reset email arrived. Opening it on a phone produced “site can’t be reached” because the development redirect uses loopback (`127.0.0.1`), which points to the phone itself. The app is running on this computer at ports 5173 and 5174; complete the reset from email on this computer. A deployed HTTPS frontend is needed for normal phone recovery.
-- An owner-completed password reset and new-password sign-in remain unverified. No owner password was handled or changed by the agent.
-- Next: complete the private live recovery check, then hosted concurrency/uncertain-response tests, physical-device checks, and production email/hosting/backup preparation. Keep using fictional ledger data.
+- The owner confirmed on 8 September that the reset worked and new-password sign-in succeeded. No owner password was handled or changed by the agent.
+- Live recovery is complete. Hosted save validation continues in the newer section above; physical-device checks and production email/hosting/backup preparation remain future work.
 
 ## Audited transaction corrections — 7 September 2026
 

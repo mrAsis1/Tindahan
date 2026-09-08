@@ -44,7 +44,7 @@ function rpcError(message: string, code?: string) {
     return new Error(
       'The database setup has not been applied yet. Run the Tindahan migration in Supabase, then try again.',
     );
-  return new Error(message);
+  return Object.assign(new Error(message), { code });
 }
 
 export const supabaseRepository: Repository = {
