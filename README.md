@@ -10,6 +10,8 @@ Customer history now supports [audited entry corrections](docs/corrections.md): 
 
 Supabase owner accounts also have [password recovery](docs/account-recovery.md) through **Forgot password?** on the sign-in screen. Development recovery links support ports 5173 and 5174.
 
+[Hosted save validation](docs/hosted-save-validation.md) covers simultaneous payments and retries after uncertain responses. Keep a failed save form open to retry its original request; check history before starting a new entry after closing or reloading it.
+
 Use **Node.js 24.18.0** and **npm 11.16.0** (versions are recorded in `.nvmrc` and `package.json`). From this repository:
 
 ```sh

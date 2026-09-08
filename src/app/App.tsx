@@ -103,7 +103,7 @@ export function App({
           <main id="main" className="empty" role="status">
             Opening your notebook…
           </main>
-        ) : query.isError ? (
+        ) : query.isError && !query.data ? (
           <Page title="Notebook unavailable">
             <ErrorMessage message={query.error.message} />
             <button className="button" onClick={() => void query.refetch()}>
@@ -114,6 +114,15 @@ export function App({
           <StoreSetup />
         ) : (
           <DataContext.Provider value={query.data}>
+            {query.isError && (
+              <div className="note" role="alert">
+                Couldn’t refresh the notebook. Displayed balances may be out of date. Your form
+                details are still here.
+                <button className="button plain" onClick={() => void query.refetch()}>
+                  Retry refresh
+                </button>
+              </div>
+            )}
             <Routes>
               <Route path="/" element={<Navigate to="/home" replace />} />
               <Route path="/home" element={<Home />} />
