@@ -4,6 +4,8 @@
 
 ## Run the application
 
+For phone testing, use the private [hosted development app](https://tindahan-development.monarchrenante27.chatgpt.site). See [hosting access and phone checks](docs/development-hosting.md) for the ChatGPT access gate and Tindahan owner sign-in.
+
 Development uses `develop` with short `codex/feature/`, `codex/fix/`, and `codex/chore/` task branches. `main` is the release baseline. See [the branch workflow](docs/branching.md) before starting a change.
 
 Customer history now supports [audited entry corrections](docs/corrections.md): void an incorrect entry with a reason, optionally replace it, and preserve the original in history. Both local demo and Supabase modes recheck historical balances.
