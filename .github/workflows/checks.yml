@@ -34,6 +34,18 @@ jobs:
       - run: npx prettier --check .github
       - run: npm run build
       - run: npm test
+      - name: Exclude unrelated Chrome package feed
+        shell: bash
+        run: |
+          # Playwright downloads its pinned Chromium separately. The runner's
+          # Chrome APT feed is unused and can break apt update during a release.
+          shopt -s nullglob
+          mkdir -p "$RUNNER_TEMP/tindahan-apt-sources"
+          for source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if grep -Eq 'https?://dl\.google\.com/linux/chrome(-stable)?/deb' "$source"; then
+              sudo mv -- "$source" "$RUNNER_TEMP/tindahan-apt-sources/"
+            fi
+          done
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - run: npm run test:performance
