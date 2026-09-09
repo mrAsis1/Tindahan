@@ -1,5 +1,16 @@
 # Tindahan progress
 
+## Phone entry confirmation and pilot performance baseline — 10 September 2026
+
+- Established the starting point from the repository: clean `develop` at `d0c147b` (merged PR #6), up to date with origin. Started `codex/chore/pilot-performance-checks` from that branch. Earlier milestone notes below remain historical records.
+- Current stage is README milestone **5: Readiness**. Customer records, ledger, summaries, corrections, and owner recovery are implemented. Hosted ledger checks, physical-phone history, and hosted phone recovery passed previously.
+- The owner replied **“its fine”** to the requested physical-phone transaction-entry checklist (₱150 utang, ₱50/₱100 payments, keyboard/scroll/save behavior, and history reload at zero). Recorded an owner-reported pass in [phone checks](hosted-phone-checks.md), with device/browser unspecified and no independent fixture inspection in this task.
+- Added an isolated [pilot performance harness](pilot-performance.md) using optimized application code, 500 fictional customers and 20,000 entries, both evenly distributed and with a 4,000-entry customer history. It measures desktop and CPU-throttled mobile Chromium reads, checks reconciliation, records repeated timings and snapshot size, and blocks unexpected external requests. It never writes development Supabase or existing local demo storage.
+- Added the performance run to the checked pull-request workflow. Application source, original designs, hosted deployment, schema/migrations, and existing records are preserved.
+- Pilot baseline: **four performance scenarios passed functional/isolation assertions locally**, across the main run and a targeted long-history mobile run. The two-second target is **not passed**: desktop Home/day medians were 2.65–3.10 seconds; slowed mobile Home/day medians were 26.10–27.67 seconds, with a 22.58-second long-history median. Cached exact-name searches stayed below two seconds in every sample. Full results and simulation limits are in the performance guide.
+- Final local validation passed: formatting (including `.github`), production build/type checking, **48 unit/PostgreSQL tests**, and **60 mobile/desktop browser regressions**. The added four performance scenarios separately passed their functional/isolation assertions as described above. Normalized Windows checkout line endings for formatting without changing tracked application content. Integration uses a checked pull request into `develop`; `main` stays at the release baseline.
+- Next: use the baseline to address pilot-volume bottlenecks and pagination, then verify hosted/device/network performance, production setup/email, backup restoration, and a small-store pilot. Phone entry confirmation does not complete these readiness gates.
+
 ## Hosted acceptance checks — 9 September 2026
 
 - Started from current `develop` on `codex/chore/hosted-phone-checks`.

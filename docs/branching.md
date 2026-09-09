@@ -42,7 +42,10 @@ Local equivalents:
 npm run format:check
 npx prettier --check .github
 npm run check
+npm run test:performance
 ```
+
+The performance harness checks fictional pilot-volume reads and reports timings separately from the two-second readiness target. A green build does not certify production performance; see [pilot performance checks](pilot-performance.md).
 
 Branch protections are a separate GitHub setting; this workflow file alone does not prevent direct pushes. If enabling protection for `main` and `develop`, require a pull request and the successful **Build and test** check, disallow force pushes/deletion, and keep required approving reviews at zero for a solo developer. No protection rules were automatically changed by this setup.
 
