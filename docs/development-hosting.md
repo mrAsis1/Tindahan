@@ -29,6 +29,8 @@ Build with `npm run build`. Use the Sites hosting skill's packaging helper to pa
 
 ## Phone checklist and remaining work
 
+Follow the [repeatable hosted acceptance checks](hosted-phone-checks.md) for exact fictional amounts and expected balances, and record browser and physical-phone outcomes separately.
+
 - Sign in/out and reload a nested customer/history page.
 - Create a fictional customer, add utang, and record partial/full payments.
 - Complete password recovery from the hosted address after signing into private Site access.
