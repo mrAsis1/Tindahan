@@ -30,7 +30,10 @@ For recovery, finish the private Site access sign-in, then request one reset ema
 - The owner confirmed that the hosted notebook loads on their phone.
 - Direct navigation to hosted `/auth/forgot-password` and a full reload both rendered the email-request form. Direct navigation to `/auth/reset-password` without credentials rendered **Reset link unavailable** with the request-new-link action. No email was sent and no password was changed in these checks.
 - The missing-link page was checked with a 390×844 viewport; the document width was 390px, with no horizontal overflow. This is desktop browser emulation, not a physical-phone keyboard check.
-- Hosted browser ledger checks are pending owner sign-in in the test browser.
+- After owner sign-in, the complete hosted ledger sequence passed at 390×844: customer creation at zero, unique-name search, ₱150 utang, ₱50 partial payment, reload at ₱100 remaining, ₱100 final payment, and reload at zero. History contains exactly one utang and two payments. The history page has no horizontal overflow at this viewport. These were actual hosted UI writes through the app to development Supabase, without HTTP interception or direct SQL writes.
+- Fixture customer: `98c0d654-226f-420e-9cfc-562eea2f9488` (**Hosted UI check 9 September 2026**). Utang: `ce7b71a2-fc96-49a8-ae85-2f0314a2e123`; partial payment: `4b2a6317-55f8-46cc-887c-cbf322cba3a8`; final payment: `cb88c9e9-abdf-45d5-a223-93d2a3c00957`. All existing records were preserved.
+- Dashboard and Daily Record both show ₱650 utang and ₱650 payments for 9 September, up from ₱500 each before this check. Outstanding remains zero. Daily Record shows all three new entries among 15 entries that day.
+- Physical-phone comparison of this fixture and hosted password recovery have been requested from the owner; results are pending.
 - Physical-phone transaction entry, keyboard behavior, and hosted phone recovery remain unverified.
 
 The existing automated local/fictional-API browser tests and development database concurrency checks provide separate coverage; they are not substitutes for these hosted UI and physical-device checks.

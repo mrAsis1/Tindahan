@@ -4,9 +4,10 @@
 
 - Started from current `develop` on `codex/chore/hosted-phone-checks`.
 - Added a [repeatable hosted ledger and phone checklist](hosted-phone-checks.md): one clearly labeled fictional customer, ₱150 utang, ₱50/₱100 payments, search, reload persistence, and cross-device history comparison.
-- The owner previously confirmed that the notebook loads on their phone. The hosted app in the available test browser currently shows the owner sign-in screen; requested private owner sign-in before performing live UI writes. No new customer or ledger entry has been saved during this check yet.
+- After private owner sign-in, the hosted UI sequence passed at a 390×844 viewport against development Supabase: customer creation, search, ₱150 utang, ₱50 payment, reload at ₱100 remaining, ₱100 payment, and reload at zero with exactly three entries. The fictional customer **Hosted UI check 9 September 2026** remains for traceability; IDs are in the checklist. Existing records were preserved.
 - Verified hosted recovery routes directly: the forgot-password form survives reload, and a reset URL without credentials shows the missing/expired-link message. At a 390×844 emulated viewport, the missing-link page has no horizontal overflow. No email was sent or password changed by these checks.
-- Remaining: complete the hosted browser ledger sequence after sign-in, then have the owner verify physical-phone entry/keyboard behavior and hosted password recovery. Keep these results separate from local mobile emulation and database concurrency tests. No deployment or schema change is needed for the checklist.
+- Dashboard and Daily Record totals both increased from ₱500 to ₱650 for utang and payments; outstanding stayed zero. The history page also has no horizontal overflow at the tested viewport.
+- Remaining: the owner has been asked to compare the fixture on their phone and complete hosted password recovery privately. Physical-phone transaction entry/keyboard behavior remains separate work. These hosted UI results are distinct from local mobile emulation with a fictional API and database concurrency tests. No application code, deployment, or schema change was needed.
 
 ## Private development hosting — 9 September 2026
 
