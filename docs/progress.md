@@ -1,5 +1,13 @@
 # Tindahan progress
 
+## Private development hosting — 9 September 2026
+
+- Started from current `develop` on `codex/chore/development-hosting`.
+- Registered the owner-only Tindahan Development Site at `https://tindahan-development.monarchrenante27.chatgpt.site`. Added the Site manifest with Vite static output and single-page route fallback.
+- Prepared the Supabase Site URL and exact hosted recovery callback while preserving local reset callbacks. No schema migration, account recreation, or ledger changes are required.
+- Added [hosting and phone-testing instructions](development-hosting.md), including the separate ChatGPT access gate, Tindahan owner login, build-time public settings, and reset-link handling.
+- Hosting validation and deployment completion are tracked in this task and its feature pull request. Physical phone testing is the owner's next check; production email, backups, and performance remain future work.
+
 ## Hosted save validation — 9 September 2026
 
 - Started from current `develop` on `codex/feature/hosted-save-validation`; original designs and migrations preserved.
