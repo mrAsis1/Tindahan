@@ -1,5 +1,15 @@
 # Tindahan progress
 
+## Hosted acceptance checks — 9 September 2026
+
+- Started from current `develop` on `codex/chore/hosted-phone-checks`.
+- Added a [repeatable hosted ledger and phone checklist](hosted-phone-checks.md): one clearly labeled fictional customer, ₱150 utang, ₱50/₱100 payments, search, reload persistence, and cross-device history comparison.
+- After private owner sign-in, the hosted UI sequence passed at a 390×844 viewport against development Supabase: customer creation, search, ₱150 utang, ₱50 payment, reload at ₱100 remaining, ₱100 payment, and reload at zero with exactly three entries. The fictional customer **Hosted UI check 9 September 2026** remains for traceability; IDs are in the checklist. Existing records were preserved.
+- Verified hosted recovery routes directly: the forgot-password form survives reload, and a reset URL without credentials shows the missing/expired-link message. At a 390×844 emulated viewport, the missing-link page has no horizontal overflow. No email was sent or password changed by these checks.
+- Dashboard and Daily Record totals both increased from ₱500 to ₱650 for utang and payments; outstanding stayed zero. The history page also has no horizontal overflow at the tested viewport.
+- The owner confirmed that both requested phone checks passed: the same three entries and zero balance appeared, and hosted recovery/new-password sign-in worked. Password entry and email links stayed private with the owner.
+- Remaining: physical-phone transaction entry/keyboard behavior, production email setup, backup restoration, and pilot performance work. These hosted UI results are distinct from local mobile emulation with a fictional API and database concurrency tests. No application code, deployment, or schema change was needed.
+
 ## Private development hosting — 9 September 2026
 
 - Started from current `develop` on `codex/chore/development-hosting`.

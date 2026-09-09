@@ -29,10 +29,12 @@ Build with `npm run build`. Use the Sites hosting skill's packaging helper to pa
 
 ## Phone checklist and remaining work
 
+Follow the [repeatable hosted acceptance checks](hosted-phone-checks.md) for exact fictional amounts and expected balances, and record browser and physical-phone outcomes separately.
+
 - Sign in/out and reload a nested customer/history page.
 - Create a fictional customer, add utang, and record partial/full payments.
 - Complete password recovery from the hosted address after signing into private Site access.
 - Check keyboard overlap, scrolling, tap targets, and any email-app browser differences.
 - Check uncertain saves carefully: retry state lasts while the form stays open; inspect history after a reload before creating another entry.
 
-On 9 September 2026, the owner confirmed the hosted notebook loads on their phone. Transaction entry, hosted password recovery, and the rest of the phone checklist still need separate verification. Production hosting/access, custom SMTP, backup restoration, pagination/performance, and a real-data pilot remain separate milestones.
+On 9 September 2026, the owner confirmed the hosted notebook loads on their phone. Hosted browser customer creation, search, utang, partial/full payments, and reload persistence subsequently passed at a 390×844 viewport against development Supabase; see the acceptance-check results. The owner then confirmed the same test history and zero balance on their phone, plus successful hosted password recovery and new-password sign-in. Physical-phone transaction entry and keyboard behavior still need separate verification. Production hosting/access, custom SMTP, backup restoration, pagination/performance, and a real-data pilot remain separate milestones.
