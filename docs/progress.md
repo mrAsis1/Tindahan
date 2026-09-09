@@ -7,6 +7,7 @@
 - Applied the Supabase Site URL and exact hosted recovery callback while preserving local reset callbacks. CLI verification reports all hosted configuration up to date. No schema migration, account recreation, or ledger changes were required.
 - Added [hosting and phone-testing instructions](development-hosting.md), including the separate ChatGPT access gate, Tindahan owner login, build-time public settings, and reset-link handling.
 - Privately published the validated Supabase-mode static build; Sites reports deployment succeeded. [PR #5](https://github.com/mrAsis1/Tindahan/pull/5) tracks the exact source and integration into `develop`. The implementation passed build, formatting, 46 unit/database tests, and 60 browser tests on GitHub. Hosted runtime access/sign-in on a physical phone remains the owner's next check; production email, backups, and performance remain future work.
+- After publication, the owner confirmed that the notebook loads on their phone. Private access and owner sign-in therefore have a successful physical-device check. Hosted phone transaction flows and password recovery still need separate checks. The published app source is `511aa763b01e86a6697681b34555874ee1a9a9d5` (Sites version 2); this subsequent note only records the test outcome.
 
 ## Hosted save validation — 9 September 2026
 

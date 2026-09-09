@@ -35,4 +35,4 @@ Build with `npm run build`. Use the Sites hosting skill's packaging helper to pa
 - Check keyboard overlap, scrolling, tap targets, and any email-app browser differences.
 - Check uncertain saves carefully: retry state lasts while the form stays open; inspect history after a reload before creating another entry.
 
-Physical-device verification is performed by the owner. Production hosting/access, custom SMTP, backup restoration, pagination/performance, and a real-data pilot remain separate milestones.
+On 9 September 2026, the owner confirmed the hosted notebook loads on their phone. Transaction entry, hosted password recovery, and the rest of the phone checklist still need separate verification. Production hosting/access, custom SMTP, backup restoration, pagination/performance, and a real-data pilot remain separate milestones.
