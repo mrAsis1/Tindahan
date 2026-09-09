@@ -45,7 +45,7 @@ To revisit the original fictional demo, change `VITE_DATA_BACKEND=local` and res
 
 For this owner-only development app, use email/password and keep public user registration disabled in Supabase **Authentication → Sign In / Providers → User Signups**. Manually create the owner through the dashboard as described above. The initial SQL migration does not change hosted Auth settings.
 
-For the configured development project, public signup has been disabled through the dashboard. Its Site URL is saved as `http://127.0.0.1:5173`, with `http://localhost:5173` also saved in the redirect allow list.
+For the configured development project, public signup remains disabled. Its Site URL is now `https://tindahan-development.monarchrenante27.chatgpt.site`, with the exact hosted `/auth/reset-password` callback added and local development redirects preserved. See [private hosting and phone access](development-hosting.md).
 
 Password recovery is implemented through **Forgot password?** on the owner sign-in screen. Hosted Auth also allows the exact `/auth/reset-password` callback on `127.0.0.1` and `localhost` at ports 5173 and 5174. See [account recovery](account-recovery.md) for instructions, email delivery checks, and deployment settings. Public signup remains disabled; invitation delivery and custom SMTP setup remain future work.
 

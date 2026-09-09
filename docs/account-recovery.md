@@ -14,12 +14,15 @@ Expired, missing, and rejected links offer **Request a new link**. Rate limits a
 
 ## Development configuration
 
-The development project's Site URL remains `http://127.0.0.1:5173`. Its existing `http://localhost:5173` redirect is preserved. These exact recovery redirects are configured in both hosted Auth and `supabase/config.toml`:
+The development project's Site URL is now `https://tindahan-development.monarchrenante27.chatgpt.site`. Its local redirects are preserved. These exact recovery redirects are configured in both hosted Auth and `supabase/config.toml`:
 
 - `http://127.0.0.1:5173/auth/reset-password`
 - `http://localhost:5173/auth/reset-password`
 - `http://127.0.0.1:5174/auth/reset-password`
 - `http://localhost:5174/auth/reset-password`
+- `https://tindahan-development.monarchrenante27.chatgpt.site/auth/reset-password`
+
+For phone recovery, request the email from the [hosted app](https://tindahan-development.monarchrenante27.chatgpt.site) after signing in to its private ChatGPT access gate. See [hosting instructions](development-hosting.md). A link requested from localhost still points to that local computer.
 
 The app requests a redirect to its current origin plus `/auth/reset-password`. Before using a different port or deployment hostname, add its exact callback URL in Supabase Authentication → URL Configuration. Production hosting also needs a single-page app fallback for both `/auth/forgot-password` and `/auth/reset-password`.
 

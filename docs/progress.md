@@ -4,9 +4,9 @@
 
 - Started from current `develop` on `codex/chore/development-hosting`.
 - Registered the owner-only Tindahan Development Site at `https://tindahan-development.monarchrenante27.chatgpt.site`. Added the Site manifest with Vite static output and single-page route fallback.
-- Prepared the Supabase Site URL and exact hosted recovery callback while preserving local reset callbacks. No schema migration, account recreation, or ledger changes are required.
+- Applied the Supabase Site URL and exact hosted recovery callback while preserving local reset callbacks. CLI verification reports all hosted configuration up to date. No schema migration, account recreation, or ledger changes were required.
 - Added [hosting and phone-testing instructions](development-hosting.md), including the separate ChatGPT access gate, Tindahan owner login, build-time public settings, and reset-link handling.
-- Hosting validation and deployment completion are tracked in this task and its feature pull request. Physical phone testing is the owner's next check; production email, backups, and performance remain future work.
+- Privately published the validated Supabase-mode static build; Sites reports deployment succeeded. [PR #5](https://github.com/mrAsis1/Tindahan/pull/5) tracks the exact source and integration into `develop`. The implementation passed build, formatting, 46 unit/database tests, and 60 browser tests on GitHub. Hosted runtime access/sign-in on a physical phone remains the owner's next check; production email, backups, and performance remain future work.
 
 ## Hosted save validation — 9 September 2026
 
