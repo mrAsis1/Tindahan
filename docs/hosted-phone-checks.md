@@ -36,4 +36,10 @@ For recovery, finish the private Site access sign-in, then request one reset ema
 - The owner confirmed both requested physical-phone checks passed: the fixture showed the same ₱150 utang, ₱50/₱100 payments, and zero balance; the hosted recovery email, new-password update, and subsequent sign-in also worked. Passwords and reset links were handled privately by the owner.
 - Creating transactions directly on the physical phone and keyboard behavior remain unverified. The successful phone comparison verifies reading the hosted entries across devices.
 
+## Physical-phone transaction entry — 10 September 2026
+
+- Asked the owner to create **Phone entry check 10 September 2026**, labeled **Fictional phone test**, enter ₱150 utang and ₱50/₱100 payments, check fields/scrolling/save buttons with the keyboard open, then reload history for exactly three entries and ₱0 balance. If the fixture already existed, the instructions were to inspect history before resuming.
+- The owner replied **“its fine”** to that checklist. Record this as an owner-reported pass of the requested phone entry check, with no overlap, scrolling, or save issue reported. The phone model, operating system, and browser were not supplied; this does not establish coverage of both Android and iOS.
+- No independent inspection of this fixture's IDs or history was performed in this task. Preserve the fixture and all existing records. Earlier detailed hosted fixture results above remain unchanged.
+
 The existing automated local/fictional-API browser tests and development database concurrency checks provide separate coverage; they are not substitutes for these hosted UI and physical-device checks.

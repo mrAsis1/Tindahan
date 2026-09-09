@@ -14,6 +14,8 @@ Supabase owner accounts also have [password recovery](docs/account-recovery.md) 
 
 [Hosted save validation](docs/hosted-save-validation.md) covers simultaneous payments and retries after uncertain responses. Keep a failed save form open to retry its original request; check history before starting a new entry after closing or reloading it.
 
+[Pilot performance checks](docs/pilot-performance.md) measure an isolated fictional 500-customer/20,000-entry notebook with `npm run test:performance`. They report frontend timings separately from hosted database and physical-phone acceptance.
+
 Use **Node.js 24.18.0** and **npm 11.16.0** (versions are recorded in `.nvmrc` and `package.json`). From this repository:
 
 ```sh
