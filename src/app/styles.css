@@ -173,6 +173,19 @@
     flex-direction: column;
     gap: 16px;
   }
+  .paged-records {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scroll-margin-top: 16px;
+  }
+  .list-pagination {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+  }
   .card {
     padding: 18px;
     background: white;

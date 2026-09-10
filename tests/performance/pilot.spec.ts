@@ -75,11 +75,12 @@ for (const concentrated of [false, true]) {
       await measure('customers-navigation', async () => {
         await nav.getByRole('link', { name: 'Customers', exact: true }).click();
         await expect(page.getByRole('heading', { name: 'Customers', exact: true })).toBeVisible();
-        await expect(page.locator('.customer-row')).toHaveCount(500);
+        await expect(page.locator('.customer-row')).toHaveCount(50);
+        await expect(page.getByText('Showing 1–50 of 500', { exact: true })).toBeVisible();
       });
       await nav.getByRole('link', { name: 'Search', exact: true }).click();
       await expect(page.getByRole('heading', { name: 'Search', exact: true })).toBeVisible();
-      await expect(page.locator('.customer-row')).toHaveCount(500);
+      await expect(page.locator('.customer-row')).toHaveCount(50);
       await measure('search-exact', async () => {
         await page.getByLabel('Search by name').fill('Fictional customer 001');
         await expect(page.locator('.customer-row')).toHaveCount(1);
@@ -89,14 +90,17 @@ for (const concentrated of [false, true]) {
       });
       await measure('customer-history', async () => {
         await page.locator('.customer-row').click();
-        await expect(page.locator('article.record')).toHaveCount(concentrated ? 4_000 : 40);
+        await expect(page.locator('article.record')).toHaveCount(concentrated ? 50 : 40);
+        if (concentrated)
+          await expect(page.getByText('Showing 1–50 of 4000', { exact: true })).toBeVisible();
         await expect(page.locator('.amount')).toHaveText(
           concentrated ? '₱200,000.00' : '₱2,000.00',
         );
       });
       await measure('daily-reload', async () => {
         await page.goto('/daily-record?date=2026-08-20');
-        await expect(page.locator('a.record')).toHaveCount(1_000);
+        await expect(page.locator('a.record')).toHaveCount(50);
+        await expect(page.getByText('Showing 1–50 of 1000', { exact: true })).toBeVisible();
         await expect(
           page.locator('.summary-row').filter({ hasText: 'Total outstanding' }),
         ).toContainText('₱1,000,000.00');
