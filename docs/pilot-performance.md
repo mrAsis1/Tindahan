@@ -23,6 +23,27 @@ Each fresh Playwright context intercepts the fictional Auth user and notebook re
 
 The JSON runner report is `.local-checks/pilot/report.json`. Its test attachments contain the measured browser version, CPU factor, response delay, uncompressed snapshot size, read count, and timing samples. GitHub's **Build and test** job also runs the harness; its log retains the JSON measurements. Local generated reports stay ignored.
 
+## Smaller transaction-form and confirmation reads — 11 September 2026
+
+Continued from the PR #12 baseline at `45d7f75`. Add Utang, Add Payment and New Customer now request the existing directory view (all customers and current balances, no entries). New transaction confirmations carry the selected customer in their URL and request that customer's complete history. No new SQL migration or write-API change was needed. Legacy confirmation links without a customer and correction forms still load the complete notebook; mismatched customer hints show Entry not found rather than downloading another view.
+
+All 12 optimized-build cases passed. The same concentrated fixture, response-delay model and fourfold mobile CPU slowdown produced these single observations (milliseconds), with the prior baseline retained below:
+
+| Browser / JSON model        | Open utang | Open payment | Utang save to confirmation | Payment retry to confirmation |
+| --------------------------- | ---------: | -----------: | -------------------------: | ----------------------------: |
+| Desktop / baseline          |      1,108 |          973 |                        992 |                           998 |
+| Desktop / constrained       |      1,081 |          955 |                      2,109 |                         2,018 |
+| Slowed mobile / baseline    |      1,980 |        1,352 |                      2,651 |                         2,389 |
+| Slowed mobile / constrained |      2,875 |        2,309 |                      2,862 |                         2,789 |
+
+The form/refresh response fell from **5,886,357 to 120,542 raw bytes (97.95% less)**, or 237,027 to 4,890 gzip-sized bytes before saves. A new confirmation with the deliberately long history returns roughly 1.15 MB, including all 4,001/4,002 entries needed for accurate running balances. Across both flows, notebook response data fell from about **23.55 MB to 2.78 MB (88.2% less)**. There are now six smaller reads instead of four full reads: four directory reads and two customer-history reads. The harness rejects full reads in these flows and enforces payload limits.
+
+Under the constrained model, a directory response delay is about 440 ms versus the previous full snapshot's 2,297 ms; the long-history confirmation adds about 700 ms. New saves refresh the directory and await confirmation history before leaving the saved form. This adds a round trip; final desktop baseline saves were about one second, while an earlier run measured 1.3 seconds. Timings also include in-memory fixture projection and automation overhead; no database timing claim is made. Amount/preview interaction was 41–147 ms. Constrained simulated-phone openings improved from the earlier 5.8–6.4 seconds to 2.3–2.9 seconds, with the same single-sample and host-variation limitations. An earlier implementation run measured 1.5–3.3 seconds; neither run establishes a device-level guarantee.
+
+Current/preview/confirmation balances, pending saves, failed-payment retry identity and exact appended-entry counts still passed. Focused browser cases also verified switching between different customer balances, direct confirmation reloads, legacy links, mismatched hints, voided entries and the existing lost-response/refresh-failure safeguards. A failed confirmation-history read retains the saved form and retries reads without another write, even with older history cached. Pending confirmation loading after a full payment does not show a misleading overpayment warning. Local demo storage remains a complete notebook; projections are never persisted.
+
+This is a verified payload reduction and a promising constrained-model improvement, **not completion of the two-second or physical-phone acceptance target**. Cold starts and very long confirmation histories still have measurable waits. Keep those limits for phone/pilot verification while proceeding with backup-restoration preparation. The earlier scoped-read migration and matching frontend remain undeployed.
+
 ## Large-notebook forms and connection model — 11 September 2026
 
 Added `forms.spec.ts` to the optimized-build suite: four form scenarios plus the existing eight read/startup checks (12 total). The new scenarios use the concentrated fixture: 500 customers, 20,000 entries, and customer 001 with 4,000 entries and ₱200,000 outstanding. Each scenario opens Add Utang directly, records ₱150, opens Add Payment directly, and records ₱50 after one failed request. Expected final customer balance is ₱200,100, with exactly two added in-memory entries.

@@ -3,18 +3,24 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { queryClient, repository, useData } from '../../app/data';
+import { queryClient, readNotebook, repository, useData, useReadTotals } from '../../app/data';
 import { Dialog, ErrorMessage, Field, Page, SummaryRow } from '../../components/ui';
 import { CustomerForm } from '../customers/CustomerForm';
-import { balance } from '../../lib/ledger';
 import { money, parseMoney } from '../../lib/money';
 import { storeNow } from '../../lib/dates';
 import { transactionSchema } from '../../lib/validation';
 import { backendMode } from '../../lib/api/supabase';
 
 type Values = z.infer<typeof transactionSchema>;
-export function TransactionForm({ payment = false }: { payment?: boolean }) {
+export function TransactionForm({
+  payment = false,
+  ownerId,
+}: {
+  payment?: boolean;
+  ownerId: string;
+}) {
   const data = useData();
+  const totals = useReadTotals()!;
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [addingCustomer, setAddingCustomer] = useState(false);
@@ -40,9 +46,10 @@ export function TransactionForm({ payment = false }: { payment?: boolean }) {
     },
   });
   const customerId = watch('customerId');
-  const current = balance(data.entries, customerId);
+  const current = totals.balances.find((b) => b.customerId === customerId)?.amount ?? 0;
   const amount = parseMoney(watch('amount'));
-  const overpaid = payment && !retrying && amount !== null && amount > current;
+  const overpaid =
+    payment && !retrying && !savedEntryId.current && amount !== null && amount > current;
   const customer = data.customers.find((c) => c.id === customerId);
   return (
     <Page
@@ -89,7 +96,17 @@ export function TransactionForm({ payment = false }: { payment?: boolean }) {
               savedEntryId.current = entry.id;
             }
             await queryClient.invalidateQueries({ queryKey: ['store'] }, { throwOnError: true });
-            navigate(`/transactions/${savedEntryId.current}/confirmation`, { replace: true });
+            // Keep the saved form and retry state until its complete confirmation
+            // history is ready, even if an older history is already cached.
+            const confirmationView = { kind: 'customer' as const, customerId: values.customerId };
+            await queryClient.fetchQuery({
+              queryKey: ['store', ownerId, confirmationView],
+              queryFn: () => readNotebook(confirmationView),
+            });
+            navigate(
+              `/transactions/${savedEntryId.current}/confirmation?customer=${encodeURIComponent(values.customerId)}`,
+              { replace: true },
+            );
           } catch (error) {
             // Validation/access failures roll back the RPC transaction. A lost
             // connection has an uncertain result, so preserve its exact attempt.
@@ -195,7 +212,7 @@ export function TransactionForm({ payment = false }: { payment?: boolean }) {
             {...register('effectiveDate')}
           />
         </Field>
-        {payment && customer && !retrying && (
+        {payment && customer && !retrying && !savedEntryId.current && (
           <div className="note" aria-live="polite">
             <SummaryRow label="Payment received" value={money(amount ?? 0)} tone="payment" />
             {overpaid ? (

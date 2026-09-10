@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { gzipSync } from 'node:zlib';
 import { createPilotFixture } from '../fixtures/pilot';
+import { fixtureRead } from '../fixtures/notebookReads';
 import type { LedgerEntry } from '../../src/types';
 
 for (const slow of [false, true]) {
@@ -76,8 +77,8 @@ for (const slow of [false, true]) {
         };
         if (url.pathname === '/auth/v1/user' && route.request().method() === 'GET')
           return json(owner);
-        if (url.pathname === '/rest/v1/rpc/get_notebook' && route.request().method() === 'POST')
-          return json(data);
+        if (url.pathname === '/rest/v1/rpc/read_notebook' && route.request().method() === 'POST')
+          return json(fixtureRead(data, route.request().postDataJSON()));
         if (url.pathname === '/rest/v1/rpc/record_entry' && route.request().method() === 'POST') {
           const input = route.request().postDataJSON();
           attempts.push(input);
@@ -191,7 +192,11 @@ for (const slow of [false, true]) {
     ]);
     expect(unexpected).toEqual([]);
     expect(errors).toEqual([]);
-    expect(responses.filter((response) => response.path.endsWith('/get_notebook'))).toHaveLength(4);
+    expect(responses.filter((response) => response.path.endsWith('/get_notebook'))).toHaveLength(0);
+    const reads = responses.filter((response) => response.path.endsWith('/read_notebook'));
+    expect(reads).toHaveLength(6);
+    expect(reads.every((response) => response.rawBytes < 1200000)).toBe(true);
+    expect(reads.filter((response) => response.rawBytes < 200000)).toHaveLength(4);
     expect(await page.evaluate(() => localStorage.getItem('tindahan.local-demo.v1'))).toBeNull();
     const report = {
       project: testInfo.project.name,
