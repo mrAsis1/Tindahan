@@ -1,5 +1,15 @@
 # Tindahan progress
 
+## Browser startup runtime investigation — 10 September 2026
+
+- Started from clean, up-to-date `develop` at `594e9bc`, the checked merge of PR #10, on `codex/fix/startup-runtime`. Current stage remains **5: Readiness**; deployment stays deferred.
+- Repeated the unchanged application before selecting another optimization. The initial slowed-mobile Home median was 682 ms, substantially below the prior session without a source change. Runtime profiling did not reproduce a multi-second application stall. Host/runtime variation prevents attributing these faster timings to an app improvement.
+- Added test-only browser measurements for actual Home content, a subsequent paint opportunity, notebook request/response boundaries and long tasks. Preserved existing interaction timings, financial assertions and isolated fictional responses. Added optional first-navigation CPU profiles, explicitly marked and saved separately for diagnosis.
+- The unprofiled suite passed all **eight performance/startup checks**. Slowed-mobile Home interaction medians were **680–814 ms**; browser Home paint-opportunity medians were **575–680 ms**. Every measured interaction in this run stayed below two seconds, but this does not complete hosted/physical-phone acceptance or erase prior slower results. See [the investigation and retained baselines](pilot-performance.md#browser-startup-investigation--10-september-2026).
+- No application, financial, focus/accessibility, dependency, schema, storage or hosted changes were justified by this investigation. The startup asset remains 596,830 bytes. The earlier scoped-read migration and matching frontend remain undeployed; `main` stays reserved for releases.
+- Final local validation passed formatting (including `.github`), production build/type checking, **58 unit/PostgreSQL tests**, **72 browser regressions**, all **eight performance/startup checks**, and the optional mobile CPU-profile run. Integration requires a reviewed pull request into `develop` with successful final-commit GitHub checks.
+- Next: measure full-notebook transaction-form loading with the pilot dataset, which existing read benchmarks do not cover. Physical-device/network verification, production/email setup, backup restoration and the small-store pilot remain separate readiness gates.
+
 ## Deferred form loading and startup profiling — 10 September 2026
 
 - Continued from clean, up-to-date `develop` at `affac24`, the checked merge of PR #9, on `codex/fix/startup-loading`. Current stage remains README milestone **5: Readiness**, with deployment deferred.
