@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { DataContext, refreshData, localRepository, useStoreQuery } from './data';
+import {
+  DataContext,
+  ReadTotalsContext,
+  refreshData,
+  localRepository,
+  useStoreQuery,
+} from './data';
+import { viewForRoute } from '../lib/notebookReads';
 import { backendMode } from '../lib/api/supabase';
 import { StoreSetup } from '../features/auth/AuthGate';
 import { Dialog, ErrorMessage, Page } from '../components/ui';
@@ -19,10 +26,10 @@ export function App({
   ownerId?: string;
   onSignOut?: () => Promise<void>;
 }) {
-  const query = useStoreQuery(ownerId);
+  const location = useLocation();
+  const query = useStoreQuery(ownerId, viewForRoute(location.pathname, location.search));
   const cloud = backendMode === 'supabase';
   const [signOutError, setSignOutError] = useState('');
-  const location = useLocation();
   const navigate = useNavigate();
   const [reset, setReset] = useState(false);
   const [resetError, setResetError] = useState('');
@@ -71,7 +78,9 @@ export function App({
         </a>
         <div className="demo-bar">
           <span>
-            {cloud ? (query.data?.store?.name ?? 'Cloud notebook') : 'Local demo · fictional data'}
+            {cloud
+              ? (query.data?.notebook.store?.name ?? 'Cloud notebook')
+              : 'Local demo · fictional data'}
           </span>
           {cloud ? (
             <button
@@ -110,52 +119,54 @@ export function App({
               Try again
             </button>
           </Page>
-        ) : cloud && !query.data.store ? (
+        ) : cloud && !query.data.notebook.store ? (
           <StoreSetup />
         ) : (
-          <DataContext.Provider value={query.data}>
-            {query.isError && (
-              <div className="note" role="alert">
-                Couldn’t refresh the notebook. Displayed balances may be out of date. Your form
-                details are still here.
-                <button className="button plain" onClick={() => void query.refetch()}>
-                  Retry refresh
-                </button>
-              </div>
-            )}
-            <Routes>
-              <Route path="/" element={<Navigate to="/home" replace />} />
-              <Route path="/home" element={<Home />} />
-              <Route path="/daily-record" element={<DailyRecord />} />
-              <Route path="/search" element={<Customers key="search" search />} />
-              <Route path="/customers" element={<Customers key="customers" />} />
-              <Route path="/customers/new" element={<NewCustomerPage />} />
-              <Route path="/customers/:id" element={<CustomerDetail key={location.pathname} />} />
-              <Route
-                path="/utang/new"
-                element={<TransactionForm key={`utang-${location.search}`} />}
-              />
-              <Route
-                path="/payments/new"
-                element={<TransactionForm key={`payment-${location.search}`} payment />}
-              />
-              <Route path="/transactions/:id/confirmation" element={<Confirmation />} />
-              <Route
-                path="/transactions/:id/correct"
-                element={<CorrectionForm key={location.pathname} />}
-              />
-              <Route
-                path="*"
-                element={
-                  <Page title="Page not found" back="/home">
-                    <p>Return to your notebook to keep going.</p>
-                  </Page>
-                }
-              />
-            </Routes>
+          <DataContext.Provider value={query.data.notebook}>
+            <ReadTotalsContext.Provider value={query.data.totals}>
+              {query.isError && (
+                <div className="note" role="alert">
+                  Couldn’t refresh the notebook. Displayed balances may be out of date. Your form
+                  details are still here.
+                  <button className="button plain" onClick={() => void query.refetch()}>
+                    Retry refresh
+                  </button>
+                </div>
+              )}
+              <Routes>
+                <Route path="/" element={<Navigate to="/home" replace />} />
+                <Route path="/home" element={<Home />} />
+                <Route path="/daily-record" element={<DailyRecord />} />
+                <Route path="/search" element={<Customers key="search" search />} />
+                <Route path="/customers" element={<Customers key="customers" />} />
+                <Route path="/customers/new" element={<NewCustomerPage />} />
+                <Route path="/customers/:id" element={<CustomerDetail key={location.pathname} />} />
+                <Route
+                  path="/utang/new"
+                  element={<TransactionForm key={`utang-${location.search}`} />}
+                />
+                <Route
+                  path="/payments/new"
+                  element={<TransactionForm key={`payment-${location.search}`} payment />}
+                />
+                <Route path="/transactions/:id/confirmation" element={<Confirmation />} />
+                <Route
+                  path="/transactions/:id/correct"
+                  element={<CorrectionForm key={location.pathname} />}
+                />
+                <Route
+                  path="*"
+                  element={
+                    <Page title="Page not found" back="/home">
+                      <p>Return to your notebook to keep going.</p>
+                    </Page>
+                  }
+                />
+              </Routes>
+            </ReadTotalsContext.Provider>
           </DataContext.Provider>
         )}
-        {!hideNav && (!cloud || !!query.data?.store) && (
+        {!hideNav && (!cloud || !!query.data?.notebook.store) && (
           <nav className="bottom-nav" aria-label="Main navigation">
             {[
               ['/home', '⌂', 'Home'],

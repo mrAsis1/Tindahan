@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { correctionSchema, customerSchema, newEntrySchema, storeSchema } from '../validation';
 import type { Repository } from './repository';
 import { recoveryLocation } from '../../features/auth/recoveryHelpers';
+import { notebookReadSchema, type NotebookView, type NotebookRead } from '../notebookReads';
 
 export const initialRecovery =
   typeof window === 'undefined'
@@ -92,4 +93,15 @@ export const supabaseRepository: Repository = {
 export async function createStore(name: string) {
   const { error } = await client().rpc('create_store', { p_name: name.trim() });
   if (error) throw rpcError(error.message, error.code);
+}
+
+export async function readCloudNotebook(view: NotebookView): Promise<NotebookRead> {
+  if (view.kind === 'full') return { notebook: await supabaseRepository.getData(), totals: null };
+  const { data, error } = await client().rpc('read_notebook', {
+    p_view: view.kind,
+    p_day: 'day' in view ? view.day : null,
+    p_customer_id: view.kind === 'customer' ? view.customerId : null,
+  });
+  if (error) throw rpcError(error.message, error.code);
+  return notebookReadSchema.parse(data);
 }

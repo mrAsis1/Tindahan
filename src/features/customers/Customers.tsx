@@ -1,15 +1,19 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { useData } from '../../app/data';
+import { useData, useReadTotals } from '../../app/data';
 import { CustomerRow, Empty, EntryRow, Field, Page } from '../../components/ui';
 import { PaginatedList } from '../../components/PaginatedList';
-import { balance, balancesByCustomer, history } from '../../lib/ledger';
+import { balance, history } from '../../lib/ledger';
 import { money } from '../../lib/money';
 
 export function Customers({ search = false }: { search?: boolean }) {
-  const { customers, entries } = useData();
+  const { customers } = useData();
+  const totals = useReadTotals()!;
   const [query, setQuery] = useState('');
-  const balances = useMemo(() => balancesByCustomer(entries), [entries]);
+  const balances = useMemo(
+    () => new Map(totals.balances.map((b) => [b.customerId, b.amount])),
+    [totals],
+  );
   const searchTerm = query.trim().toLocaleLowerCase();
   const matches = customers.filter((c) => c.name.toLocaleLowerCase().includes(searchTerm));
   return (
