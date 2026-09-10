@@ -2,6 +2,8 @@
 
 ## Current development project
 
+**Pending development change:** current source requires `20260910090000_scoped_notebook_reads.sql` for Home/customer/day reads. This additive migration is locally tested but not applied to the hosted project. Follow [scoped-read rollout](scoped-notebook-reads.md) when deployment resumes; the existing hosted frontend continues using the original API.
+
 Project: **Tindahan Development**, reference `bzkbndvmspnyjkuyaudr`.
 
 The initial migration was applied through the project's SQL Editor on 6 September 2026 after verifying that its public schema had no existing tables. All five tables were checked afterward: row-level security enabled, anonymous reads denied, direct authenticated inserts denied. The application uses explicit RPCs for writes.

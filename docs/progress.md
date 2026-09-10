@@ -1,5 +1,16 @@
 # Tindahan progress
 
+## Scoped notebook loading — 10 September 2026
+
+- Started from clean, up-to-date `develop` at `035e7ca`, the checked merge of PR #8, on `codex/feature/scoped-notebook-reads`. Stage remains README milestone **5: Readiness**; deployment is still deferred by the owner.
+- Added screen-specific reads for Home (three recent entries plus whole-ledger totals), Customers/Search (customers and balances without entries), one customer's complete history, and a selected day's entries/totals. Write/correction forms and confirmations retain the complete notebook and existing historical/retry checks. Display pagination remains 50 rows; this is not server-cursor pagination.
+- Added `20260910090000_scoped_notebook_reads.sql`, preserving the two existing migrations and full-read/write APIs. The new read-only function uses an authenticated owner scope and a consistent statement snapshot. It has **not been applied to hosted development**. The matching frontend is not published; existing hosted records/app and `main` are unchanged. See [rollout and limitations](scoped-notebook-reads.md).
+- Query caches now distinguish owner, view, day and customer. Saves invalidate all notebook views. Added failure/retry and stale-summary checks; missing migration reports setup failure without a full-read or local-demo fallback. Local demo projections stay in memory and never overwrite stored records.
+- Local validation: **58 unit/PostgreSQL tests** passed, including comparisons against complete snapshots after audited corrections and a real-SQL 500-customer/20,000-entry fixture. All original **66 browser regressions** passed, followed by **14 cloud-read/save cases** including six new mobile/desktop cases (72 total cases in the complete suite).
+- All **four performance scenarios** passed correctness, network-isolation and payload-limit assertions. Home's fictional notebook response fell from about 5.9 MB to 1.7 KB; slowed-mobile Home medians improved to 3.23–3.47 seconds and day medians to 2.02–4.03 seconds. The **two-second target remains not passed**. See [measurements and preserved earlier baselines](pilot-performance.md).
+- Final local formatting (including `.github`) and production build/type checking passed. [PR #9](https://github.com/mrAsis1/Tindahan/pull/9) tracks the reviewed change; merge its final head only after the complete GitHub checks pass. Integration does not apply the pending migration or publish the frontend.
+- Next: profile remaining browser startup and large individual history/day/write-form loading. When development rollout resumes, apply the reviewed additive migration before publishing its frontend, then verify preserved fictional records on a recorded physical phone/browser/network. Production setup/email, backup restoration and the small-store pilot remain separate gates.
+
 ## Notebook rendering and validation performance — 10 September 2026
 
 - Continued from clean, up-to-date `develop` at `839e3d5`, the verified merge of [PR #7](https://github.com/mrAsis1/Tindahan/pull/7). Created `codex/fix/notebook-performance`. The owner asked to continue readiness work and explicitly deferred deployment.

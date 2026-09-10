@@ -1,5 +1,6 @@
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import type { StoreData, LedgerEntry } from '../../src/types';
+import { fixtureRead } from '../fixtures/notebookReads';
 
 // UI/network failure checks only. Hosted PostgreSQL locking is checked separately
 // by tests/hosted/verify-saves.mjs, never by this in-memory API fixture.
@@ -41,7 +42,13 @@ async function cloud(context: BrowserContext, failure: 'lost' | 'before' | 'refr
       },
     ],
   };
-  const calls = { ids: [] as string[], failed: false, reads: 0 };
+  const calls = {
+    ids: [] as string[],
+    failed: false,
+    reads: 0,
+    fullReads: 0,
+    views: [] as string[],
+  };
   await context.addInitScript((user) => {
     localStorage.setItem(
       'sb-auth-test-auth-token',
@@ -59,13 +66,19 @@ async function cloud(context: BrowserContext, failure: 'lost' | 'before' | 'refr
     const json = (body: unknown, status = 200) =>
       route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
     if (path === '/auth/v1/user') return json(owner);
-    if (path === '/rest/v1/rpc/get_notebook') {
+    if (path === '/rest/v1/rpc/get_notebook' || path === '/rest/v1/rpc/read_notebook') {
       calls.reads++;
+      if (path.endsWith('/get_notebook')) calls.fullReads++;
+      else calls.views.push(route.request().postDataJSON().p_view);
       if (failure === 'refresh' && calls.ids.length && !calls.failed) {
         calls.failed = true;
         return json({ message: 'Temporary refresh failure', code: '503' }, 503);
       }
-      return json(state);
+      return json(
+        path.endsWith('/read_notebook')
+          ? fixtureRead(state, route.request().postDataJSON())
+          : state,
+      );
     }
     if (path === '/rest/v1/rpc/record_entry') {
       const input = route.request().postDataJSON();
@@ -109,6 +122,72 @@ async function payment(page: Page, amount = '100') {
   await page.goto(`/payments/new?customer=${customer}`);
   await page.getByLabel('Payment amount').fill(amount);
 }
+
+test('scoped read caches refresh after a payment without using partial history for writes', async ({
+  page,
+  context,
+}) => {
+  const { calls } = await cloud(context, 'none');
+  await page.goto('/home');
+  await expect(page.locator('.hero .amount')).toHaveText('₱100.00');
+  await page.getByRole('navigation').getByRole('link', { name: 'Customers', exact: true }).click();
+  await expect(page.locator('.customer-row')).toContainText('₱100.00');
+  await page.locator('.customer-row').click();
+  await expect(page.locator('.amount')).toHaveText('₱100.00');
+  expect(calls.fullReads).toBe(0);
+  await page.getByRole('link', { name: 'Record Payment' }).click();
+  await page.getByLabel('Payment amount').fill('50');
+  expect(calls.fullReads).toBe(1);
+  await page.getByRole('button', { name: 'Record payment' }).click();
+  await expect(page.getByRole('heading', { name: 'Payment recorded' })).toBeVisible();
+  await page.getByRole('link', { name: 'Back to Home', exact: true }).click();
+  await expect(page.locator('.hero .amount')).toHaveText('₱50.00');
+  await page.getByRole('navigation').getByRole('link', { name: 'Customers', exact: true }).click();
+  await expect(page.locator('.customer-row')).toContainText('₱50.00');
+  await page.locator('.customer-row').click();
+  await expect(page.locator('article.record')).toHaveCount(2);
+  await expect(page.locator('.amount')).toHaveText('₱50.00');
+  expect(calls.views).toEqual(['home', 'directory', 'customer', 'home', 'directory', 'customer']);
+  expect(await page.evaluate(() => localStorage.getItem('tindahan.local-demo.v1'))).toBeNull();
+});
+
+test('a failed scoped read retries without borrowing another screen’s cached totals', async ({
+  page,
+  context,
+}) => {
+  const { calls } = await cloud(context, 'none');
+  await page.goto('/home');
+  await expect(page.locator('.hero .amount')).toHaveText('₱100.00');
+  let reject = true;
+  await context.route('**/rest/v1/rpc/read_notebook', async (route) => {
+    if (route.request().postDataJSON().p_view === 'directory' && reject) {
+      reject = false;
+      return route.fulfill({ status: 503, json: { message: 'Fictional read failure' } });
+    }
+    return route.fallback();
+  });
+  await page.getByRole('navigation').getByRole('link', { name: 'Customers', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Notebook unavailable' })).toBeVisible();
+  await expect(page.locator('.customer-row')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Try again', exact: true }).click();
+  await expect(page.locator('.customer-row')).toContainText('₱100.00');
+  expect(calls.fullReads).toBe(0);
+});
+
+test('an unapplied scoped-read migration reports setup failure without a full-read fallback', async ({
+  page,
+  context,
+}) => {
+  const { calls } = await cloud(context, 'none');
+  await context.route('**/rest/v1/rpc/read_notebook', (route) =>
+    route.fulfill({ status: 404, json: { code: 'PGRST202', message: 'Function missing' } }),
+  );
+  await page.goto('/home');
+  await expect(page.getByRole('heading', { name: 'Notebook unavailable' })).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('database setup has not been applied');
+  expect(calls.fullReads).toBe(0);
+  expect(await page.evaluate(() => localStorage.getItem('tindahan.local-demo.v1'))).toBeNull();
+});
 
 test('retries a committed full payment after a lost response and zero-balance refresh', async ({
   page,

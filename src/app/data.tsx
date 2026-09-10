@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect } from 'react';
 import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createLocalRepository, STORAGE_KEY } from '../lib/api/localRepository';
 import type { StoreData } from '../types';
-import { backendMode, supabaseRepository } from '../lib/api/supabase';
+import { backendMode, supabaseRepository, readCloudNotebook } from '../lib/api/supabase';
+import { projectNotebook, type NotebookView, type ReadTotals } from '../lib/notebookReads';
 import type { Repository } from '../lib/api/repository';
 
 export const queryClient = new QueryClient({
@@ -16,12 +17,14 @@ export const localRepository = createLocalRepository({
 export const repository: Repository =
   backendMode === 'supabase' ? supabaseRepository : localRepository;
 export const DataContext = createContext<StoreData | null>(null);
+export const ReadTotalsContext = createContext<ReadTotals | null>(null);
+export const useReadTotals = () => useContext(ReadTotalsContext);
 export function useData() {
   const data = useContext(DataContext);
   if (!data) throw new Error('Store data is not loaded.');
   return data;
 }
-export function useStoreQuery(ownerId = 'local') {
+export function useStoreQuery(ownerId = 'local', view: NotebookView = { kind: 'full' }) {
   const client = useQueryClient();
   useEffect(() => {
     if (backendMode !== 'local') return;
@@ -32,6 +35,12 @@ export function useStoreQuery(ownerId = 'local') {
     window.addEventListener('storage', update);
     return () => window.removeEventListener('storage', update);
   }, [client]);
-  return useQuery({ queryKey: ['store', ownerId], queryFn: () => repository.getData() });
+  return useQuery({
+    queryKey: ['store', ownerId, view],
+    queryFn: async () =>
+      backendMode === 'supabase'
+        ? readCloudNotebook(view)
+        : projectNotebook(await localRepository.getData(), view),
+  });
 }
 export const refreshData = () => queryClient.invalidateQueries({ queryKey: ['store'] });
