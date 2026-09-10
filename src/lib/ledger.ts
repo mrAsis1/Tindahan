@@ -21,6 +21,14 @@ export const balance = (entries: LedgerEntry[], customerId?: string) =>
     .filter((e) => !customerId || e.customerId === customerId)
     .reduce((total, entry) => total + signedAmount(entry), 0);
 
+export function balancesByCustomer(entries: LedgerEntry[]) {
+  const balances = new Map<string, number>();
+  for (const entry of entries) {
+    balances.set(entry.customerId, (balances.get(entry.customerId) ?? 0) + signedAmount(entry));
+  }
+  return balances;
+}
+
 export function history(entries: LedgerEntry[], customerId: string) {
   let runningBalance = 0;
   return chronological(entries.filter((e) => e.customerId === customerId))
