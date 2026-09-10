@@ -17,7 +17,7 @@ Each fresh Playwright context intercepts the fictional Auth user and notebook-re
 - Two deterministic datasets each have 500 explicitly fictional customers and 20,000 active entries over 20 days in August 2026. Each pair has ₱150 utang then ₱50 payment, producing ₱1,000,000 outstanding. Independent unit checks validate the schema, historical balances, unique entries, and expected totals.
 - The even dataset has 40 entries per customer. The concentrated variant has 4,000 entries and ₱200,000 outstanding for customer 001. Both have 1,000 entries on the tested day, 20 August, with ₱75,000 utang, ₱25,000 payments, and ₱1,000,000 closing balance.
 - Desktop Chromium runs at normal CPU speed; Pixel 7 emulation uses Chromium with a fourfold CPU slowdown. Neither is a physical phone. The fixture adds 150 ms to each notebook response, without bandwidth throttling or a real database/server delay.
-- Three samples measure Home reload, navigation to the customer directory, exact-name search after the Search screen is ready, opening customer history, and Daily Record reload. Reloads fetch the whole notebook; in-app navigation can use the existing query cache. Playwright request routing disables the browser HTTP cache, so these reloads also include local static-asset requests. Following the pagination change, directory/history/day timings measure the first page of at most 50 rows; the historical baseline below rendered every row. The dataset, full-ledger totals, CPU settings, and response delay are unchanged.
+- Three samples measure Home reload, navigation to the customer directory, exact-name search after the Search screen is ready, opening customer history, and Daily Record reload. Current code fetches a screen-specific response; in-app navigation reuses only the matching view's query cache. Playwright request routing disables the browser HTTP cache, so reloads also include local static-asset requests. Following the pagination change, directory/history/day timings measure the first page of at most 50 rows; the initial baseline below rendered every row. The dataset, full-ledger totals, CPU settings, and 150 ms response delay are unchanged. Current responses are precomputed outside timed interactions using the same projection verified against SQL; timings do not measure database execution.
 - Timings include Playwright interaction/assertion overhead and two animation frames after expected content appears. They are conservative automation durations, not browser-only paint metrics. Reports retain every sample, median, maximum, and count above two seconds. Three samples are a small baseline, insufficient for a reliable p95 claim.
 - Correct customer balances, directory/history/day row counts, Home and day closing totals, expected notebook reads, absence of page errors, and network isolation must pass. Timing overruns are reported, not hidden or enforced as hardware-dependent CI failures.
 
@@ -57,9 +57,34 @@ All desktop samples were below two seconds. All slowed-mobile Home/day samples s
 
 Snapshot sizes remain unchanged at 5,893,463 and 5,886,357 uncompressed bytes. An intermediate run before same-second clock reuse also passed functional assertions but had slower mobile Home/day medians of 15–22 seconds. The final report records all samples; neither run measured hosted service or physical-device performance. Separate unit and mobile/desktop browser regressions verify full balances, older-entry corrections and retained originals across pages, filter/search/day resets, and narrow layout.
 
+## Scoped responses — 10 September 2026
+
+The [new read API](scoped-notebook-reads.md) returns only the entries and totals needed for the selected screen. It is locally tested and not yet installed on hosted development. The final four-scenario local run passed together with the same Chromium version, fixtures and CPU settings. Median durations in milliseconds:
+
+| Dataset / browser            | Home reload | Customer directory | Exact-name search | Customer history | Daily reload |
+| ---------------------------- | ----------: | -----------------: | ----------------: | ---------------: | -----------: |
+| Even / desktop               |         462 |                344 |                58 |              301 |          498 |
+| Concentrated / desktop       |         454 |                334 |                57 |              468 |          500 |
+| Even / slowed mobile         |       3,466 |              3,420 |               258 |              926 |        2,019 |
+| Concentrated / slowed mobile |       3,231 |              2,820 |               337 |            2,638 |        4,027 |
+
+Home/day reload medians improved compared with the previous complete-snapshot run. Directory/history navigation now makes a separate request with its own 150 ms delay, so cached-navigation results are not the same workload as before. The final run made 12 scoped reads per scenario instead of the old six whole-notebook reads. Repeated search uses the directory cache.
+
+| Response                              | Even dataset bytes | Concentrated dataset bytes |
+| ------------------------------------- | -----------------: | -------------------------: |
+| Old complete notebook, for comparison |          5,893,463 |                  5,886,357 |
+| Home (three entries)                  |              1,717 |                      1,711 |
+| Directory (500 customers, no entries) |            120,540 |                    120,542 |
+| Customer history (40 / 4,000 entries) |             11,963 |                  1,147,787 |
+| Day (1,000 entries)                   |            384,950 |                    384,765 |
+
+These are uncompressed fictional JSON response sizes, excluding static assets and HTTP overhead. Home is more than 99.9% smaller. The harness rejects `get_notebook()` on all measured routes and enforces response-size limits, while retaining full-total assertions. A separate real-SQL test seeds a disposable 500-customer/20,000-entry database, checks totals and reduced response sizes, and does not claim hosted timings.
+
+The two-second target remains **not passed**: all desktop samples passed, but slowed-mobile Home/day/directory/history still had overruns. Home ranged from 964–7,264 ms and day from 1,871–5,365 ms. Search remained below two seconds. Remaining startup, individual history/day loading, real network/server latency and save performance need separate measurement.
+
 ## Remaining acceptance work
 
-The application still fetches and validates the complete notebook. Customer directories, histories, and day lists now render at most 50 rows per page; totals and running balances use the complete ledger before rendering. This reduces browser work without reducing the snapshot download. The harness does not verify hosted database performance or save latency. It also excludes correction-heavy performance datasets and actual store-network conditions. Separate browser regression tests cover corrections across page boundaries. Short fixture IDs and omitted optional/null audit fields mean a hosted notebook with the same entry count can have a larger payload.
+Read screens now fetch scoped data. Forms and confirmations still fetch the complete notebook; customer histories and days still fetch every entry in their selected scope before displaying 50-row pages. Totals use the full relevant ledger. The harness does not verify hosted database performance or save latency. It also excludes correction-heavy performance datasets and actual store-network conditions. Separate SQL and browser tests cover correction chains and page boundaries. Short fixture IDs and omitted optional/null audit fields mean a hosted response can be larger.
 
 Use the measurements to choose the next optimization, then rerun the same dataset. Before calling the pilot target passed, agree and record the physical device/browser and network profile, test a development backend at the pilot volume with clearly separated fixtures, measure saves and post-save refreshes, and verify that pagination retains complete totals and correction history. Production email, a separate production environment, a backup restoration rehearsal, and the small-store pilot remain separate readiness gates.
 
