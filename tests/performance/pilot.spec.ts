@@ -72,6 +72,7 @@ for (const concentrated of [false, true]) {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     const timings: Record<string, number[]> = {};
+    const startup: unknown[] = [];
     async function measure(name: string, action: () => Promise<void>) {
       const start = performance.now();
       await action();
@@ -91,6 +92,26 @@ for (const concentrated of [false, true]) {
         await expect(page.locator('.hero .amount')).toHaveText('₱1,000,000.00');
         await expect(page.getByText('500 customers with a balance', { exact: true })).toBeVisible();
       });
+      startup.push(
+        await page.evaluate(() => {
+          const navigation = performance.getEntriesByType(
+            'navigation',
+          )[0] as PerformanceNavigationTiming;
+          const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
+          const scripts = resources.filter((r) => new URL(r.name).pathname.endsWith('.js'));
+          const firstPaint = performance.getEntriesByName('first-contentful-paint')[0];
+          return {
+            domInteractiveMs: Math.round(navigation.domInteractive),
+            firstContentfulPaintMs: firstPaint ? Math.round(firstPaint.startTime) : null,
+            scripts: scripts.map((r) => ({
+              path: new URL(r.name).pathname,
+              decodedBytes: r.decodedBodySize,
+              endMs: Math.round(r.responseEnd),
+            })),
+            scriptBytes: scripts.reduce((sum, r) => sum + r.decodedBodySize, 0),
+          };
+        }),
+      );
       await measure('customers-navigation', async () => {
         await nav.getByRole('link', { name: 'Customers', exact: true }).click();
         await expect(page.getByRole('heading', { name: 'Customers', exact: true })).toBeVisible();
@@ -150,6 +171,7 @@ for (const concentrated of [false, true]) {
       responseDelayMs: 150,
       snapshotBytes: Buffer.byteLength(body),
       payloads,
+      startup,
       reads,
       results,
     };

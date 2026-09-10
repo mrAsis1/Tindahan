@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import {
   DataContext,
@@ -13,11 +13,21 @@ import { StoreSetup } from '../features/auth/AuthGate';
 import { Dialog, ErrorMessage, Page } from '../components/ui';
 import { Home } from '../features/dashboard/Home';
 import { Customers, CustomerDetail } from '../features/customers/Customers';
-import { NewCustomerPage } from '../features/customers/CustomerForm';
-import { TransactionForm } from '../features/transactions/TransactionForm';
-import { Confirmation } from '../features/transactions/Confirmation';
-import { CorrectionForm } from '../features/transactions/CorrectionForm';
+import { PageLoadBoundary } from '../components/PageLoadBoundary';
 import { DailyRecord } from '../features/daily-record/DailyRecord';
+
+const NewCustomerPage = lazy(() =>
+  import('../features/customers/CustomerForm').then((m) => ({ default: m.NewCustomerPage })),
+);
+const TransactionForm = lazy(() =>
+  import('../features/transactions/TransactionForm').then((m) => ({ default: m.TransactionForm })),
+);
+const Confirmation = lazy(() =>
+  import('../features/transactions/Confirmation').then((m) => ({ default: m.Confirmation })),
+);
+const CorrectionForm = lazy(() =>
+  import('../features/transactions/CorrectionForm').then((m) => ({ default: m.CorrectionForm })),
+);
 
 export function App({
   ownerId = 'local',
@@ -133,36 +143,41 @@ export function App({
                   </button>
                 </div>
               )}
-              <Routes>
-                <Route path="/" element={<Navigate to="/home" replace />} />
-                <Route path="/home" element={<Home />} />
-                <Route path="/daily-record" element={<DailyRecord />} />
-                <Route path="/search" element={<Customers key="search" search />} />
-                <Route path="/customers" element={<Customers key="customers" />} />
-                <Route path="/customers/new" element={<NewCustomerPage />} />
-                <Route path="/customers/:id" element={<CustomerDetail key={location.pathname} />} />
-                <Route
-                  path="/utang/new"
-                  element={<TransactionForm key={`utang-${location.search}`} />}
-                />
-                <Route
-                  path="/payments/new"
-                  element={<TransactionForm key={`payment-${location.search}`} payment />}
-                />
-                <Route path="/transactions/:id/confirmation" element={<Confirmation />} />
-                <Route
-                  path="/transactions/:id/correct"
-                  element={<CorrectionForm key={location.pathname} />}
-                />
-                <Route
-                  path="*"
-                  element={
-                    <Page title="Page not found" back="/home">
-                      <p>Return to your notebook to keep going.</p>
-                    </Page>
-                  }
-                />
-              </Routes>
+              <PageLoadBoundary key={location.pathname}>
+                <Routes>
+                  <Route path="/" element={<Navigate to="/home" replace />} />
+                  <Route path="/home" element={<Home />} />
+                  <Route path="/daily-record" element={<DailyRecord />} />
+                  <Route path="/search" element={<Customers key="search" search />} />
+                  <Route path="/customers" element={<Customers key="customers" />} />
+                  <Route path="/customers/new" element={<NewCustomerPage />} />
+                  <Route
+                    path="/customers/:id"
+                    element={<CustomerDetail key={location.pathname} />}
+                  />
+                  <Route
+                    path="/utang/new"
+                    element={<TransactionForm key={`utang-${location.search}`} />}
+                  />
+                  <Route
+                    path="/payments/new"
+                    element={<TransactionForm key={`payment-${location.search}`} payment />}
+                  />
+                  <Route path="/transactions/:id/confirmation" element={<Confirmation />} />
+                  <Route
+                    path="/transactions/:id/correct"
+                    element={<CorrectionForm key={location.pathname} />}
+                  />
+                  <Route
+                    path="*"
+                    element={
+                      <Page title="Page not found" back="/home">
+                        <p>Return to your notebook to keep going.</p>
+                      </Page>
+                    }
+                  />
+                </Routes>
+              </PageLoadBoundary>
             </ReadTotalsContext.Provider>
           </DataContext.Provider>
         )}
