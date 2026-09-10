@@ -1,13 +1,15 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../../app/data';
 import { Empty, EntryRow, Page, SummaryRow } from '../../components/ui';
 import { dateLabel, storeNow } from '../../lib/dates';
-import { balance, chronological, dailySummary } from '../../lib/ledger';
+import { balance, balancesByCustomer, chronological, dailySummary } from '../../lib/ledger';
 import { money } from '../../lib/money';
 import { backendMode } from '../../lib/api/supabase';
 
 export function Home() {
   const { entries, customers } = useData();
+  const balances = useMemo(() => balancesByCustomer(entries), [entries]);
   const today = storeNow().date;
   const daily = dailySummary(entries, today);
   const recent = chronological(entries).reverse().slice(0, 3);
@@ -18,7 +20,7 @@ export function Home() {
         <p className="eyebrow">TOTAL OUTSTANDING UTANG</p>
         <p className="amount">{money(balance(entries))}</p>
         <p className="small">
-          {customers.filter((c) => balance(entries, c.id) > 0).length} customers with a balance
+          {customers.filter((c) => (balances.get(c.id) ?? 0) > 0).length} customers with a balance
         </p>
       </section>
       <div className="actions">
