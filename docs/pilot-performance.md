@@ -82,6 +82,29 @@ These are uncompressed fictional JSON response sizes, excluding static assets an
 
 The two-second target remains **not passed**: all desktop samples passed, but slowed-mobile Home/day/directory/history still had overruns. Home ranged from 964–7,264 ms and day from 1,871–5,365 ms. Search remained below two seconds. Remaining startup, individual history/day loading, real network/server latency and save performance need separate measurement.
 
+## Deferred form code and startup profiling — 10 September 2026
+
+An optimized-build module inspection found React Hook Form and all form/correction/confirmation screens in the initial JavaScript. Those routes now load through dynamic imports, with an accessible loading state and a manual recovery path for failed downloads. The primary reading screens and authentication initialization remain eager. Deferred code is downloaded on first use, so this reduces startup work rather than removing the code entirely; the first form visit makes additional asset requests.
+
+The browser measured **641,414 bytes before and 596,830 bytes after** for Home's initial JavaScript: **44,584 fewer decoded bytes (6.95%)**. Build gzip estimates changed from about 187 KB to 172 KB. These are JavaScript sizes, separate from the unchanged roughly 1.7 KB Home notebook response. The main bundle remains above Vite's 500 KB advisory; framework/authentication/read-validation dependencies still form most of it.
+
+The pilot report now records initial script URLs/decoded sizes/response completion, DOM interactive time and first contentful paint for each Home sample. A missing paint entry is reported as null. First paint may show a loading screen and does not mean the notebook is ready. Source-module rendered sizes were used to locate candidates; they are not additive final minified-byte measurements.
+
+The same-session desktop even-dataset baseline measured Home median 501 ms and first-paint median 176 ms; after deferral these were 483 ms and 168 ms. Three samples do not establish a meaningful timing improvement. The final full run retained the same fixtures, 150 ms API delay, browser version and CPU settings. Median notebook-ready durations in milliseconds:
+
+| Dataset / browser            | Home reload | Customer directory | Exact-name search | Customer history | Daily reload |
+| ---------------------------- | ----------: | -----------------: | ----------------: | ---------------: | -----------: |
+| Even / desktop               |         483 |                356 |                67 |              312 |          469 |
+| Concentrated / desktop       |         465 |                331 |                63 |              436 |          504 |
+| Even / slowed mobile         |       3,378 |              2,244 |               338 |            2,183 |        4,684 |
+| Concentrated / slowed mobile |       3,730 |              2,212 |               316 |            4,166 |        4,519 |
+
+All four scenarios passed correctness/isolation checks. Desktop samples and exact-name searches stayed below two seconds. Slowed-mobile Home/day samples all exceeded it; history/directory still had overruns. Slowed-mobile first paint ranged from 1,200–3,992 ms despite script responses completing within 161–349 ms. This identifies a remaining interval to profile; it does not isolate a specific CPU, rendering, authentication or scheduling cause. The two-second target remains **not passed**, and mobile timings do not show a consistent gain over PR #9. The verified improvement is the smaller startup download.
+
+Four additional optimized-build checks (mobile and desktop, without CPU throttling) verify that Home requests no form chunks, initial JavaScript stays below a 620 KB regression budget, forms become interactive on demand/direct reload, and a deliberately blocked form chunk recovers after manual reload. These are behavioral/asset checks, not additional pilot timing scenarios. They share the isolated server and fictional API, reject unexpected external requests, and verify that local demo storage remains absent. `npm run test:performance` runs all eight checks; the existing complete browser suite separately covers actual save/retry/correction/recovery flows.
+
+No frontend was published and no database change was made for this task. The earlier scoped-read migration remains pending; publish its matching frontend only after that migration is reviewed/applied when rollout resumes. Publish the complete static build, including its hashed page chunks. An older tab unable to fetch a page chunk gets a manual reload option; there is no automatic reload that could discard a draft.
+
 ## Remaining acceptance work
 
 Read screens now fetch scoped data. Forms and confirmations still fetch the complete notebook; customer histories and days still fetch every entry in their selected scope before displaying 50-row pages. Totals use the full relevant ledger. The harness does not verify hosted database performance or save latency. It also excludes correction-heavy performance datasets and actual store-network conditions. Separate SQL and browser tests cover correction chains and page boundaries. Short fixture IDs and omitted optional/null audit fields mean a hosted response can be larger.

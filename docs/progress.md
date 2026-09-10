@@ -1,5 +1,16 @@
 # Tindahan progress
 
+## Deferred form loading and startup profiling — 10 September 2026
+
+- Continued from clean, up-to-date `develop` at `affac24`, the checked merge of PR #9, on `codex/fix/startup-loading`. Current stage remains README milestone **5: Readiness**, with deployment deferred.
+- Profiled the optimized module graph and a three-sample desktop browser baseline. Home downloaded one roughly 641 KB JavaScript file, including React Hook Form and all transaction/customer/correction screens. Deferred customer creation, transaction forms, corrections and confirmations until their routes open. Home, directory, history, Daily Record and authentication initialization remain eager.
+- Added a loading state and recoverable page error boundary. Failed page downloads offer manual reload or return to Home; the app does not automatically reload a form. Existing storage, financial logic, dependency versions and recovery initialization are unchanged.
+- Added optimized-build browser checks for deferred asset requests, direct form reload, input interaction, a 620 KB initial-JavaScript budget and recovery after a blocked form download. The pilot report now also records actual startup script bytes, DOM readiness and first contentful paint, separately from notebook-ready timings.
+- No migration, hosted configuration, notebook data, deployment, or release-branch changes. The scoped-read migration from PR #9 remains pending on hosted development; rollout still requires that migration before publishing the matching frontend.
+- Browser measurements confirm startup JavaScript fell from **641,414 to 596,830 bytes (6.95%)**. The final performance run passed all four correctness/isolation scenarios plus four optimized-build asset/recovery checks. Slowed-mobile Home medians were 3.38–3.73 seconds, with no consistent timing gain over the prior run; the **two-second target remains not passed**. Preserved baselines and measured limits are in [the performance guide](pilot-performance.md).
+- Local production build/type checking, **58 unit/PostgreSQL tests**, and **72 mobile/desktop browser regressions** passed. Integration uses a checked task pull request into `develop`; `main` remains the release baseline.
+- Next: investigate the remaining interval between script response and first paint using controlled runtime profiling, and address large individual history/day and full-notebook form loading. Hosted physical-phone/network verification, production setup/email, backup restoration and a small-store pilot remain separate gates; deployment stays deferred.
+
 ## Scoped notebook loading — 10 September 2026
 
 - Started from clean, up-to-date `develop` at `035e7ca`, the checked merge of PR #8, on `codex/feature/scoped-notebook-reads`. Stage remains README milestone **5: Readiness**; deployment is still deferred by the owner.
