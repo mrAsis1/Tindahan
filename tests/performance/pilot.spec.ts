@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { createPilotFixture } from '../fixtures/pilot';
+import { fixtureView } from '../fixtures/notebookReads';
+import { projectNotebook, type NotebookView } from '../../src/lib/notebookReads';
+import { storeNow } from '../../src/lib/dates';
 
 for (const concentrated of [false, true]) {
   test(`pilot reads: ${concentrated ? 'concentrated history' : 'even distribution'}`, async ({
@@ -8,6 +11,18 @@ for (const concentrated of [false, true]) {
   }, testInfo) => {
     const data = createPilotFixture(concentrated);
     const body = JSON.stringify(data);
+    const views: NotebookView[] = [
+      { kind: 'home', day: storeNow().date },
+      { kind: 'directory' },
+      { kind: 'customer', customerId: 'pilot-customer-0' },
+      { kind: 'day', day: '2026-08-20' },
+    ];
+    // Prepare fictional server responses outside measured interactions. Actual SQL
+    // correctness is verified against PostgreSQL separately; no server timing claim.
+    const bodies = new Map(
+      views.map((view) => [JSON.stringify(view), JSON.stringify(projectNotebook(data, view))]),
+    );
+    const payloads: { view: string; bytes: number }[] = [];
     const owner = {
       id: '11111111-1111-4111-8111-111111111111',
       aud: 'authenticated',
@@ -41,10 +56,14 @@ for (const concentrated of [false, true]) {
       if (url.origin === 'https://pilot-test.supabase.co') {
         if (url.pathname === '/auth/v1/user' && route.request().method() === 'GET')
           return route.fulfill({ json: owner });
-        if (url.pathname === '/rest/v1/rpc/get_notebook' && route.request().method() === 'POST') {
+        if (url.pathname === '/rest/v1/rpc/read_notebook' && route.request().method() === 'POST') {
+          const view = fixtureView(route.request().postDataJSON());
+          const scopedBody = bodies.get(JSON.stringify(view));
+          if (!scopedBody) throw new Error('Unexpected performance view');
           reads++;
+          payloads.push({ view: view.kind, bytes: Buffer.byteLength(scopedBody) });
           await new Promise((resolve) => setTimeout(resolve, 150));
-          return route.fulfill({ contentType: 'application/json', body });
+          return route.fulfill({ contentType: 'application/json', body: scopedBody });
         }
       }
       unexpected.push(`${route.request().method()} ${url.origin}${url.pathname}`);
@@ -130,6 +149,7 @@ for (const concentrated of [false, true]) {
       cpuRate,
       responseDelayMs: 150,
       snapshotBytes: Buffer.byteLength(body),
+      payloads,
       reads,
       results,
     };
@@ -141,6 +161,11 @@ for (const concentrated of [false, true]) {
     expect(unexpected).toEqual([]);
     expect(errors).toEqual([]);
     expect(reads).toBeGreaterThanOrEqual(6);
+    expect(payloads.filter((p) => p.view === 'home').every((p) => p.bytes < 10000)).toBe(true);
+    expect(payloads.filter((p) => p.view === 'directory').every((p) => p.bytes < 200000)).toBe(
+      true,
+    );
+    expect(payloads.every((p) => p.bytes < Buffer.byteLength(body) / 4)).toBe(true);
     expect(await page.evaluate(() => localStorage.getItem('tindahan.local-demo.v1'))).toBeNull();
   });
 }

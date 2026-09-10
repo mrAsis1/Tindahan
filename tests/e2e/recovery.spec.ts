@@ -1,4 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
+import { fixtureRead } from '../fixtures/notebookReads';
+import type { StoreData } from '../../src/types';
 
 // Exercise the real Supabase SDK with deterministic HTTP responses. This hostname,
 // publishable key, account and tokens are fictional; every request is intercepted.
@@ -81,14 +83,20 @@ async function fakeAuth(
         return json({ code: 'invalid_credentials', msg: 'Invalid login credentials' }, 400);
       return json(session());
     }
-    if (url.pathname === '/rest/v1/rpc/get_notebook') {
+    if (
+      url.pathname === '/rest/v1/rpc/get_notebook' ||
+      url.pathname === '/rest/v1/rpc/read_notebook'
+    ) {
       calls.notebookReads++;
-      return json({
+      const data: StoreData = {
         version: 1,
         store: { id: '22222222-2222-4222-8222-222222222222', name: 'Test store' },
         customers: [],
         entries: [],
-      });
+      };
+      return json(
+        url.pathname.endsWith('/read_notebook') ? fixtureRead(data, request.postDataJSON()) : data,
+      );
     }
     return json({ message: 'Unexpected fixture request' }, 400);
   });
