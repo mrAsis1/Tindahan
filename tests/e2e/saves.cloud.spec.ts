@@ -219,6 +219,56 @@ test('scoped confirmations reload safely while legacy and mismatched links remai
   expect(calls.fullReads).toBe(1);
 });
 
+test('failed confirmation history keeps the saved form and retries without another write', async ({
+  page,
+  context,
+}) => {
+  const { calls } = await cloud(context, 'none');
+  // Cache the old history before saving, then fail its confirmation refresh.
+  await page.goto(`/customers/${customer}`);
+  await expect(page.locator('.amount')).toHaveText('₱100.00');
+  await page.getByRole('link', { name: 'Record Payment' }).click();
+  await page.getByLabel('Payment amount').fill('100');
+  let failHistory = true;
+  let releaseHistory!: () => void;
+  const pendingHistory = new Promise<void>((resolve) => {
+    releaseHistory = resolve;
+  });
+  await context.route('**/rest/v1/rpc/read_notebook', async (route) => {
+    if (route.request().postDataJSON().p_view === 'customer' && failHistory) {
+      failHistory = false;
+      await pendingHistory;
+      return route.fulfill({
+        status: 503,
+        json: { message: 'Fictional history refresh failure', code: '503' },
+      });
+    }
+    return route.fallback();
+  });
+  try {
+    await page.getByRole('button', { name: 'Record payment', exact: true }).click();
+    await expect(page.locator('.summary-row').filter({ hasText: 'Current utang' })).toContainText(
+      '₱0.00',
+    );
+    await expect(page.getByRole('button', { name: 'Saving…', exact: true })).toBeDisabled();
+    await expect(page.getByText('Payment is higher than the remaining balance.')).toHaveCount(0);
+    await expect(page).toHaveURL(/\/payments\/new/);
+  } finally {
+    releaseHistory();
+  }
+  await expect(page.getByRole('alert')).toContainText('Your entry was saved');
+  await expect(page).toHaveURL(/\/payments\/new/);
+  await expect(page.getByLabel('Payment amount')).toHaveValue('100');
+  expect(calls.ids).toHaveLength(1);
+  await page.getByRole('button', { name: 'Retry save' }).click();
+  await expect(page.getByRole('heading', { name: 'Payment recorded' })).toBeVisible();
+  await expect(
+    page.locator('.summary-row').filter({ hasText: 'Balance after this entry' }),
+  ).toContainText('₱0.00');
+  expect(calls.ids).toHaveLength(1);
+  expect(calls.fullReads).toBe(0);
+});
+
 test('a failed scoped read retries without borrowing another screen’s cached totals', async ({
   page,
   context,

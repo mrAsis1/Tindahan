@@ -24,6 +24,11 @@ export function useData() {
   if (!data) throw new Error('Store data is not loaded.');
   return data;
 }
+export const readNotebook = async (view: NotebookView) =>
+  backendMode === 'supabase'
+    ? readCloudNotebook(view)
+    : projectNotebook(await localRepository.getData(), view);
+
 export function useStoreQuery(ownerId = 'local', view: NotebookView = { kind: 'full' }) {
   const client = useQueryClient();
   useEffect(() => {
@@ -37,10 +42,7 @@ export function useStoreQuery(ownerId = 'local', view: NotebookView = { kind: 'f
   }, [client]);
   return useQuery({
     queryKey: ['store', ownerId, view],
-    queryFn: async () =>
-      backendMode === 'supabase'
-        ? readCloudNotebook(view)
-        : projectNotebook(await localRepository.getData(), view),
+    queryFn: () => readNotebook(view),
   });
 }
 export const refreshData = () => queryClient.invalidateQueries({ queryKey: ['store'] });
