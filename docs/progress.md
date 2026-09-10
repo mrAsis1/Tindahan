@@ -1,5 +1,15 @@
 # Tindahan progress
 
+## Large-notebook transaction forms and connection model — 11 September 2026
+
+- Started from clean, up-to-date `develop` at `a0362f8`, the checked merge of PR #11, on `codex/chore/form-network-checks`. Stage remains **5: Readiness**; deployment is deferred.
+- Added four optimized-build scenarios for Add Utang and Add Payment with 500 fictional customers and 20,000 entries, including a 4,000-entry customer. Desktop and fourfold-slowed mobile run with a 150 ms baseline or a modeled 400 ms plus 1 Mbit/s gzip-sized JSON transfer delay. This is a deterministic response-delay model, not actual network shaping or verification of hosted compression.
+- Verified customer selection, exact current/preview/confirmation balances, reachable save controls, disabled pending saves, preserved failed-payment amount, identical retry payload/request ID, and exactly two in-memory entries. No hosted writes or local-demo storage are used. Existing database and physical-phone checks remain distinct evidence.
+- The complete **12 performance/startup cases passed**, followed by all four final form cases with preview/paint timing. Final simulated-phone form openings were **3.0–3.5 seconds baseline** and **5.8–6.4 seconds constrained**; amount/preview interaction stayed below 0.2 seconds. Each scenario fetched the full roughly 5.9 MB notebook four times: two form opens and two post-save refreshes. [Measurements and limits](pilot-performance.md#large-notebook-forms-and-connection-model--11-september-2026) preserve the earlier run's variation.
+- This task adds tests and records only; it does not claim a speedup or complete performance acceptance. Application, dependencies, existing data, migrations and hosted configuration remain unchanged. The earlier scoped-read migration and matching frontend are still undeployed; `main` remains the release baseline.
+- Final local formatting (including `.github`), production build/type checking, **58 unit/PostgreSQL tests** and **72 browser regressions** passed. Merge the reviewed task into `develop` only after the final-commit GitHub checks pass.
+- Next: reduce full-notebook form/refresh reads while preserving backend financial checks and uncertain-save retries. Production/email preparation, backup restoration, physical-phone/network verification and a small-store pilot remain outstanding readiness work.
+
 ## Browser startup runtime investigation — 10 September 2026
 
 - Started from clean, up-to-date `develop` at `594e9bc`, the checked merge of PR #10, on `codex/fix/startup-runtime`. Current stage remains **5: Readiness**; deployment stays deferred.

@@ -10,7 +10,7 @@ npm run test:performance
 
 Use the repository's pinned Node/npm versions and installed Playwright Chromium. The command builds optimized application code into ignored `.local-checks/pilot/app`, then serves it on `127.0.0.1:4180`. It does not use `dist`, `.env.local`, a development Supabase account, or the hosted notebook. The Vite test configuration disables environment-file loading and fixes the fictional backend settings explicitly.
 
-Each fresh Playwright context intercepts the fictional Auth user and notebook-read responses. Every other external request is aborted and fails the test. Financial/customer writes are not implemented by the fixture. Only a fictional Auth session is stored in the disposable browser; the test checks that `tindahan.local-demo.v1` remains absent. Do not import this dataset into a real browser notebook or Supabase.
+Each fresh Playwright context intercepts the fictional Auth user and notebook responses. Every other external request is aborted and fails the test. Read/startup fixtures do not implement financial writes; the form fixture implements two in-memory entries and a failed request solely to check the UI. It is not a substitute for PostgreSQL validation. Only a fictional Auth session is stored in the disposable browser; the test checks that `tindahan.local-demo.v1` remains absent. Do not import this dataset into a real browser notebook or Supabase.
 
 ## Dataset and measurements
 
@@ -22,6 +22,29 @@ Each fresh Playwright context intercepts the fictional Auth user and notebook-re
 - Correct customer balances, directory/history/day row counts, Home and day closing totals, expected notebook reads, absence of page errors, and network isolation must pass. Timing overruns are reported, not hidden or enforced as hardware-dependent CI failures.
 
 The JSON runner report is `.local-checks/pilot/report.json`. Its test attachments contain the measured browser version, CPU factor, response delay, uncompressed snapshot size, read count, and timing samples. GitHub's **Build and test** job also runs the harness; its log retains the JSON measurements. Local generated reports stay ignored.
+
+## Large-notebook forms and connection model — 11 September 2026
+
+Added `forms.spec.ts` to the optimized-build suite: four form scenarios plus the existing eight read/startup checks (12 total). The new scenarios use the concentrated fixture: 500 customers, 20,000 entries, and customer 001 with 4,000 entries and ₱200,000 outstanding. Each scenario opens Add Utang directly, records ₱150, opens Add Payment directly, and records ₱50 after one failed request. Expected final customer balance is ₱200,100, with exactly two added in-memory entries.
+
+The baseline applies 150 ms to each successful JSON response. The constrained model applies **400 ms + gzip byte length / 125,000 bytes per second** (1 Mbit/s). The initial full notebook is 5,886,357 raw bytes or 237,027 bytes using Node's default gzip, giving a modeled 2,297 ms response delay. This assumes compression; it does **not** verify hosted response compression. Playwright receives plain JSON after that modeled delay. Static files are unthrottled. No actual bandwidth shaping, upload limit, packet scheduling, DNS/TLS delay, shared connection, radio conditions, decompression cost or real backend execution is measured. One explicitly aborted payment request separately checks connection-failure handling.
+
+The fixture holds successful writes until the test checks that Saving is disabled and the app has not shown confirmation. The failed payment must retain its amount; retry must submit the identical payload and request ID. Both confirmation balances and exactly two appended entries are checked. Each scenario observes four full-notebook reads: two direct form loads and two post-save refreshes. Existing historical/retry/database tests remain separate coverage.
+
+Each form/connection/device combination has **one observation**, not a median or a p95. Opening includes the direct navigation and complete customer/balance readiness checks. Input timing includes filling the amount, checking the payment preview where applicable, and two animation frames. Save timing includes the test's pending-state check, modeled write response, full-notebook refresh and confirmation checks; for payment it measures the successful retry, excluding the preceding failure. Timings include automation and host overhead and cannot be read as physical-phone latency. Results are attached as `pilot-form-measurements` in the JSON report.
+
+The complete 12-case suite passed; the final four form cases also passed after adding balance-preview/paint timing. Final form observations on the development Windows computer, Chromium 153.0.8010.12 (milliseconds):
+
+| Browser / JSON model        | Open utang | Open payment | Utang save to confirmation | Payment retry to confirmation |
+| --------------------------- | ---------: | -----------: | -------------------------: | ----------------------------: |
+| Desktop / baseline          |      1,352 |        1,151 |                      1,124 |                         1,091 |
+| Desktop / constrained       |      3,353 |        3,187 |                      3,439 |                         3,408 |
+| Slowed mobile / baseline    |      3,538 |        2,995 |                      3,058 |                         2,173 |
+| Slowed mobile / constrained |      6,362 |        5,772 |                      5,608 |                         5,197 |
+
+Amount/preview interaction took 55–161 ms across these cases after the notebook loaded. The prior full-suite run's constrained mobile openings were 4,796 / 5,046 ms; this variation reinforces that the model is not a device/network service-level guarantee. No application code changed between observations. The constrained model alone adds about 2.3 seconds per notebook response, even with the compression assumption, before frontend processing. Functional passes do not certify acceptable real-store wait times.
+
+The measured limitation is repeated full-notebook loading in forms and post-save refreshes. This task establishes coverage without changing the financial flow or backend. Next optimization should target those reads while preserving current-balance checks, historical backend validation, and uncertain-save retry behavior. Production setup/email, backup restoration and actual phone/network verification remain separate readiness work; deployment stays deferred.
 
 ## Browser startup investigation — 10 September 2026
 
