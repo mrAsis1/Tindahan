@@ -1,16 +1,17 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useData } from '../../app/data';
 import { CustomerRow, Empty, EntryRow, Field, Page } from '../../components/ui';
-import { balance, history } from '../../lib/ledger';
+import { PaginatedList } from '../../components/PaginatedList';
+import { balance, balancesByCustomer, history } from '../../lib/ledger';
 import { money } from '../../lib/money';
 
 export function Customers({ search = false }: { search?: boolean }) {
   const { customers, entries } = useData();
   const [query, setQuery] = useState('');
-  const matches = customers.filter((c) =>
-    c.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
-  );
+  const balances = useMemo(() => balancesByCustomer(entries), [entries]);
+  const searchTerm = query.trim().toLocaleLowerCase();
+  const matches = customers.filter((c) => c.name.toLocaleLowerCase().includes(searchTerm));
   return (
     <Page title={search ? 'Search' : 'Customers'}>
       {!search && (
@@ -30,15 +31,20 @@ export function Customers({ search = false }: { search?: boolean }) {
       </Field>
       <h2 aria-live="polite">
         {matches.length} {matches.length === 1 ? 'customer' : 'customers'}
-        {!search && ` · ${matches.filter((c) => balance(entries, c.id) > 0).length} with utang`}
+        {!search && ` · ${matches.filter((c) => (balances.get(c.id) ?? 0) > 0).length} with utang`}
       </h2>
-      {matches.map((customer) => (
-        <CustomerRow
-          key={customer.id}
-          customer={customer}
-          balance={balance(entries, customer.id)}
-        />
-      ))}
+      <PaginatedList
+        key={searchTerm}
+        items={matches}
+        label="Customers"
+        renderItem={(customer) => (
+          <CustomerRow
+            key={customer.id}
+            customer={customer}
+            balance={balances.get(customer.id) ?? 0}
+          />
+        )}
+      />
       {!matches.length && (
         <Empty>
           {customers.length
@@ -58,6 +64,7 @@ export function CustomerDetail() {
   const { id } = useParams();
   const { customers, entries } = useData();
   const [filter, setFilter] = useState('all');
+  const allHistory = useMemo(() => history(entries, id ?? ''), [entries, id]);
   const customer = customers.find((c) => c.id === id);
   if (!customer)
     return (
@@ -66,7 +73,7 @@ export function CustomerDetail() {
       </Page>
     );
   const current = balance(entries, customer.id);
-  const rows = history(entries, customer.id).filter((e) => filter === 'all' || e.type === filter);
+  const rows = allHistory.filter((e) => filter === 'all' || e.type === filter);
   return (
     <Page title="Customer History" back="/customers">
       {params.get('corrected') === '1' && (
@@ -111,9 +118,14 @@ export function CustomerDetail() {
         ))}
       </div>
       {rows.length ? (
-        rows.map((entry) => (
-          <EntryRow key={entry.id} entry={entry} runningBalance={entry.runningBalance} />
-        ))
+        <PaginatedList
+          key={`${id}:${filter}`}
+          items={rows}
+          label="Customer history"
+          renderItem={(entry) => (
+            <EntryRow key={entry.id} entry={entry} runningBalance={entry.runningBalance} />
+          )}
+        />
       ) : (
         <Empty>
           No {filter === 'all' ? 'entries' : filter === 'utang' ? 'utang entries' : 'payments'} yet.

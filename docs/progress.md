@@ -1,5 +1,16 @@
 # Tindahan progress
 
+## Notebook rendering and validation performance — 10 September 2026
+
+- Continued from clean, up-to-date `develop` at `839e3d5`, the verified merge of [PR #7](https://github.com/mrAsis1/Tindahan/pull/7). Created `codex/fix/notebook-performance`. The owner asked to continue readiness work and explicitly deferred deployment.
+- Current stage remains README milestone **5: Readiness**. Added 50-row pages to customer directories, customer histories, and Daily Record. Search uses all customers; changing search, history filter, or day returns to page one. Page controls move focus and scroll to the new rows.
+- Balances, filtered running balances, daily totals, and correction history are calculated from the full ledger before paging. Home/customer balance lookup now uses one ledger pass; repeated date/currency formatting reuses formatters. Current-time formatting is reused only for the same exact epoch second, with fresh-clock, midnight, backward-clock, and returned-object mutation checks.
+- Added three unit regressions and six mobile/desktop browser cases covering page boundaries, older-entry corrections, retained voided originals, refreshed balances, search, day changes, and narrow layout. The original functional/browser tests and historical records remain intact.
+- No schema/migration, hosted data, Supabase configuration, deployment, or existing local notebook was changed. The isolated performance harness continues to block unexpected network traffic and uses disposable fictional data. `main` remains reserved for releases.
+- Final local performance run passed all four scenarios. Desktop Home/day medians improved from 2.65–3.10 seconds to 0.92–1.39 seconds; slowed-mobile medians improved from 26.10–27.67 seconds to 9.86–11.85 seconds. The concentrated mobile history first page measured 2.74 seconds versus 22.58 seconds for the old complete list. The **two-second target remains not passed**; mobile results vary, and not every short interaction improved. See [the preserved baseline and new measurements](pilot-performance.md).
+- Local validation: final formatting and production build/type checking passed; 51 unit/PostgreSQL tests passed after the final clock change; all 66 mobile/desktop browser regressions passed for the pagination change. [PR #8](https://github.com/mrAsis1/Tindahan/pull/8) tracks this work. Its final head must also pass the full checked pull-request workflow before merging into `develop`.
+- Next: profile the remaining full-notebook loading cost and reduce it while preserving complete totals/correction history, then verify development-backend performance on a recorded physical device/network. Production setup/email, backup restoration, and the small-store pilot remain separate gates. Deployment stays deferred at the owner's request.
+
 ## Phone entry confirmation and pilot performance baseline — 10 September 2026
 
 - Established the starting point from the repository: clean `develop` at `d0c147b` (merged PR #6), up to date with origin. Started `codex/chore/pilot-performance-checks` from that branch. Earlier milestone notes below remain historical records.
