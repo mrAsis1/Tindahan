@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { writeFile } from 'node:fs/promises';
 import { createPilotFixture } from '../fixtures/pilot';
 import { fixtureView } from '../fixtures/notebookReads';
 import { projectNotebook, type NotebookView } from '../../src/lib/notebookReads';
 import { storeNow } from '../../src/lib/dates';
+import { observeHomeStartup, readHomeStartup } from './startupMetrics';
 
 for (const concentrated of [false, true]) {
   test(`pilot reads: ${concentrated ? 'concentrated history' : 'even distribution'}`, async ({
@@ -47,6 +49,8 @@ for (const concentrated of [false, true]) {
         }),
       );
     }, owner);
+    await observeHomeStartup(context);
+    const profiling = process.env.PROFILE_STARTUP === '1';
     let reads = 0;
     const unexpected: string[] = [];
     // Allow only the isolated static server and our intercepted, read-only API.
@@ -87,31 +91,37 @@ for (const concentrated of [false, true]) {
     }
     const nav = page.getByRole('navigation');
     for (let sample = 0; sample < 3; sample++) {
+      if (profiling && sample === 0) {
+        await cdp.send('Profiler.enable');
+        await cdp.send('Profiler.start');
+      }
       await measure('home-reload', async () => {
         await page.goto('/home');
         await expect(page.locator('.hero .amount')).toHaveText('₱1,000,000.00');
         await expect(page.getByText('500 customers with a balance', { exact: true })).toBeVisible();
       });
-      startup.push(
-        await page.evaluate(() => {
-          const navigation = performance.getEntriesByType(
-            'navigation',
-          )[0] as PerformanceNavigationTiming;
-          const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
-          const scripts = resources.filter((r) => new URL(r.name).pathname.endsWith('.js'));
-          const firstPaint = performance.getEntriesByName('first-contentful-paint')[0];
-          return {
-            domInteractiveMs: Math.round(navigation.domInteractive),
-            firstContentfulPaintMs: firstPaint ? Math.round(firstPaint.startTime) : null,
-            scripts: scripts.map((r) => ({
-              path: new URL(r.name).pathname,
-              decodedBytes: r.decodedBodySize,
-              endMs: Math.round(r.responseEnd),
-            })),
-            scriptBytes: scripts.reduce((sum, r) => sum + r.decodedBodySize, 0),
-          };
-        }),
+      if (profiling && sample === 0) {
+        const { profile } = await cdp.send('Profiler.stop');
+        const profilePath = testInfo.outputPath('startup.cpuprofile');
+        await writeFile(profilePath, JSON.stringify(profile));
+        await testInfo.attach('startup-cpu-profile', {
+          path: profilePath,
+          contentType: 'application/json',
+        });
+        await cdp.send('Profiler.disable');
+      }
+      const startupSample = await readHomeStartup(page);
+      expect(startupSample.homeContentMs).toBeGreaterThan(0);
+      expect(startupSample.homePaintOpportunityMs).toBeGreaterThanOrEqual(
+        startupSample.homeContentMs,
       );
+      expect(startupSample.longTasksSupported).toBe(true);
+      expect(startupSample.notebookRequestMs).toBeGreaterThan(0);
+      expect(startupSample.notebookResponseEndMs!).toBeGreaterThanOrEqual(
+        startupSample.notebookRequestMs!,
+      );
+      expect(startupSample.notebookResponseToHomeMs!).toBeGreaterThanOrEqual(0);
+      startup.push({ ...startupSample, profiled: profiling && sample === 0 });
       await measure('customers-navigation', async () => {
         await nav.getByRole('link', { name: 'Customers', exact: true }).click();
         await expect(page.getByRole('heading', { name: 'Customers', exact: true })).toBeVisible();
