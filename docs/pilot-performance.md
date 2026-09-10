@@ -23,6 +23,42 @@ Each fresh Playwright context intercepts the fictional Auth user and notebook-re
 
 The JSON runner report is `.local-checks/pilot/report.json`. Its test attachments contain the measured browser version, CPU factor, response delay, uncompressed snapshot size, read count, and timing samples. GitHub's **Build and test** job also runs the harness; its log retains the JSON measurements. Local generated reports stay ignored.
 
+## Browser startup investigation — 10 September 2026
+
+Repeated PR #10's unchanged application (`594e9bc`) before selecting another optimization. The first slowed-mobile even-dataset Home samples were **1,407 / 631 / 682 ms**, versus the previous session's 3.38–3.73-second Home medians. This does not establish a code improvement: the application and 596,830-byte startup asset are unchanged. The large difference is consistent with host/runtime variability; these runs do not identify its exact cause. The earlier measurements below remain part of the record.
+
+The harness now records browser-clock Home content appearance and two subsequent animation frames, separately from the existing automation duration. A test-only mutation observer waits for the fictional ₱1,000,000 balance and 500-customer summary. It neither wraps application functions nor changes authentication, focus, financial validation or storage. The two-frame value is a **paint opportunity**, not proof of physical display presentation. First contentful paint may show only the loading state.
+
+Each startup sample also includes notebook request/response-end timing and long tasks of at least 50 ms. `scriptEndToHomeMs` includes authentication, the intercepted network wait, rendering and scheduling; it is not pure JavaScript execution time. `notebookResponseToHomeMs` includes response processing, rendering and the frame wait. Long-task samples can include browser automation, and tasks crossing the observation boundary retain their complete duration; do not sum them as application CPU cost.
+
+Final unprofiled run: all eight checks passed. Medians are milliseconds; the existing interaction timings still include assertion and interaction overhead.
+
+| Dataset / browser            | Home reload | Customer directory | Exact-name search | Customer history | Daily reload |
+| ---------------------------- | ----------: | -----------------: | ----------------: | ---------------: | -----------: |
+| Even / desktop               |         349 |                306 |                45 |              267 |          350 |
+| Concentrated / desktop       |         350 |                277 |                46 |              383 |          316 |
+| Even / slowed mobile         |         814 |                475 |                89 |              535 |          868 |
+| Concentrated / slowed mobile |         680 |                457 |                77 |              765 |          986 |
+
+Slowed-mobile browser Home paint-opportunity samples were **1,310 / 680 / 592 ms** (even) and **1,343 / 575 / 552 ms** (concentrated). Script responses ended at 71–116 ms; notebook responses ended at 455–1,011 ms, followed by 95–337 ms to the Home paint opportunity. First navigations in each fresh context had 392–434 ms long tasks during startup and 252–254 ms around Home content appearance; later reloads had shorter tasks. All measured interactions in this run stayed below two seconds, but **hosted/physical-phone performance acceptance remains open**. A quiet local run does not supersede the slower historical runs or certify the pilot network.
+
+### Optional CPU diagnosis
+
+Use a separate run so profiler overhead is not treated as normal benchmark data. In PowerShell:
+
+```powershell
+$env:PROFILE_STARTUP = '1'
+try {
+  npx playwright test --config playwright.performance.config.ts pilot.spec.ts --project pilot-mobile --grep 'even distribution'
+} finally {
+  Remove-Item Env:PROFILE_STARTUP
+}
+```
+
+The first Home navigation attaches `startup-cpu-profile` and writes an ignored `startup.cpuprofile` under `.local-checks/pilot/results`. Copy a report/profile you need before the next run replaces the result directory. Startup samples explicitly mark whether they were profiled. Profiles contain sampled call stacks, including browser/automation activity; minified frames require the matching built asset to interpret.
+
+The diagnostic run passed. An initial profile attributed roughly 183 ms of sampled self time to the Page effect that sets title, focuses the heading and scrolls, and 121 ms to the top-level script frame. These are sampled attribution, not a causal breakdown of native layout or evidence that removing accessible focus would solve the earlier stall. No repeatable multi-second application bottleneck was established, so this task changes measurement and documentation only. Next investigate full-notebook transaction-form loading at pilot volume; keep real-device/network verification as a separate gate when development rollout resumes.
+
 ## Initial local baseline — 10 September 2026
 
 The first attempt used five rounds and a three-minute test limit. Desktop completed, but slowed mobile exceeded the overall test limit. The final harness uses three rounds and a seven-minute limit per scenario so the slow long-history case can finish. Functional failures still fail the check, and every measured overrun remains in the report. This adjustment limits repeat-run cost and allows measurement of slow behavior; it does not relax or certify the two-second target. The complete CI job has a 20-minute limit.
