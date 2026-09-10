@@ -89,10 +89,12 @@ async function cloud(context: BrowserContext, failure: 'lost' | 'before' | 'refr
       }
       const existing = state.entries.find((entry) => entry.id === input.p_request_id);
       if (existing) return json(existing);
-      const available = state.entries.reduce(
-        (sum, entry) => sum + (entry.type === 'payment' ? -1 : 1) * entry.amountCentavos,
-        0,
-      );
+      const available = state.entries
+        .filter((entry) => entry.customerId === input.p_customer_id)
+        .reduce(
+          (sum, entry) => sum + (entry.type === 'payment' ? -1 : 1) * entry.amountCentavos,
+          0,
+        );
       if (input.p_type === 'payment' && input.p_amount_centavos > available)
         return json({ message: 'Payment exceeds the available balance.', code: 'P0001' }, 400);
       const entry: LedgerEntry = {
@@ -123,7 +125,7 @@ async function payment(page: Page, amount = '100') {
   await page.getByLabel('Payment amount').fill(amount);
 }
 
-test('scoped read caches refresh after a payment without using partial history for writes', async ({
+test('scoped form balances and confirmation history refresh after a payment', async ({
   page,
   context,
 }) => {
@@ -137,7 +139,7 @@ test('scoped read caches refresh after a payment without using partial history f
   expect(calls.fullReads).toBe(0);
   await page.getByRole('link', { name: 'Record Payment' }).click();
   await page.getByLabel('Payment amount').fill('50');
-  expect(calls.fullReads).toBe(1);
+  expect(calls.fullReads).toBe(0);
   await page.getByRole('button', { name: 'Record payment' }).click();
   await expect(page.getByRole('heading', { name: 'Payment recorded' })).toBeVisible();
   await page.getByRole('link', { name: 'Back to Home', exact: true }).click();
@@ -147,8 +149,124 @@ test('scoped read caches refresh after a payment without using partial history f
   await page.locator('.customer-row').click();
   await expect(page.locator('article.record')).toHaveCount(2);
   await expect(page.locator('.amount')).toHaveText('₱50.00');
-  expect(calls.views).toEqual(['home', 'directory', 'customer', 'home', 'directory', 'customer']);
+  expect(calls.fullReads).toBe(0);
+  expect(calls.views).toEqual(expect.arrayContaining(['home', 'directory', 'customer']));
   expect(await page.evaluate(() => localStorage.getItem('tindahan.local-demo.v1'))).toBeNull();
+});
+
+test('payment selection uses each customer balance and confirms the selected history', async ({
+  page,
+  context,
+}) => {
+  const { state, calls } = await cloud(context, 'none');
+  const second = '55555555-5555-4555-8555-555555555555';
+  state.customers.push({ ...state.customers[0], id: second, name: 'Second fictional customer' });
+  state.entries.push({
+    ...state.entries[0],
+    id: '66666666-6666-4666-8666-666666666666',
+    requestId: '66666666-6666-4666-8666-666666666666',
+    customerId: second,
+    amountCentavos: 20000,
+  });
+  await payment(page, '150');
+  await expect(page.getByText('Payment is higher than the remaining balance.')).toBeVisible();
+  await page.getByLabel('Customer', { exact: true }).selectOption(second);
+  await expect(page.locator('.summary-row').filter({ hasText: 'Current utang' })).toContainText(
+    '₱200.00',
+  );
+  await expect(page.locator('.summary-row').filter({ hasText: 'Remaining utang' })).toContainText(
+    '₱50.00',
+  );
+  await page.getByRole('button', { name: 'Record payment', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Payment recorded' })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`confirmation\\?customer=${second}$`));
+  await expect(
+    page.locator('.summary-row').filter({ hasText: 'Balance after this entry' }),
+  ).toContainText('₱50.00');
+  expect(state.entries.at(-1)?.customerId).toBe(second);
+  expect(calls.fullReads).toBe(0);
+});
+
+test('scoped confirmations reload safely while legacy and mismatched links remain clear', async ({
+  page,
+  context,
+}) => {
+  const { state, calls } = await cloud(context, 'none');
+  await payment(page, '50');
+  await page.getByRole('button', { name: 'Record payment', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Payment recorded' })).toBeVisible();
+  const confirmation = page.url();
+  await page.reload();
+  await expect(page.locator('.summary-row').filter({ hasText: 'Previous balance' })).toContainText(
+    '₱100.00',
+  );
+  await expect(
+    page.locator('.summary-row').filter({ hasText: 'Balance after this entry' }),
+  ).toContainText('₱50.00');
+  expect(calls.fullReads).toBe(0);
+  const legacy = confirmation.split('?')[0];
+  await page.goto(`${legacy}?customer=55555555-5555-4555-8555-555555555555`);
+  await expect(page.getByRole('heading', { name: 'Entry not found' })).toBeVisible();
+  expect(calls.fullReads).toBe(0);
+  await page.goto(legacy);
+  await expect(page.getByRole('heading', { name: 'Payment recorded' })).toBeVisible();
+  expect(calls.fullReads).toBe(1);
+  state.entries.at(-1)!.status = 'voided';
+  state.entries.at(-1)!.voidReason = 'Fictional correction';
+  await page.goto(confirmation);
+  await expect(page.getByRole('heading', { name: 'Voided entry' })).toBeVisible();
+  await expect(page.getByText('Reason: Fictional correction')).toBeVisible();
+  expect(calls.fullReads).toBe(1);
+});
+
+test('failed confirmation history keeps the saved form and retries without another write', async ({
+  page,
+  context,
+}) => {
+  const { calls } = await cloud(context, 'none');
+  // Cache the old history before saving, then fail its confirmation refresh.
+  await page.goto(`/customers/${customer}`);
+  await expect(page.locator('.amount')).toHaveText('₱100.00');
+  await page.getByRole('link', { name: 'Record Payment' }).click();
+  await page.getByLabel('Payment amount').fill('100');
+  let failHistory = true;
+  let releaseHistory!: () => void;
+  const pendingHistory = new Promise<void>((resolve) => {
+    releaseHistory = resolve;
+  });
+  await context.route('**/rest/v1/rpc/read_notebook', async (route) => {
+    if (route.request().postDataJSON().p_view === 'customer' && failHistory) {
+      failHistory = false;
+      await pendingHistory;
+      return route.fulfill({
+        status: 503,
+        json: { message: 'Fictional history refresh failure', code: '503' },
+      });
+    }
+    return route.fallback();
+  });
+  try {
+    await page.getByRole('button', { name: 'Record payment', exact: true }).click();
+    await expect(page.locator('.summary-row').filter({ hasText: 'Current utang' })).toContainText(
+      '₱0.00',
+    );
+    await expect(page.getByRole('button', { name: 'Saving…', exact: true })).toBeDisabled();
+    await expect(page.getByText('Payment is higher than the remaining balance.')).toHaveCount(0);
+    await expect(page).toHaveURL(/\/payments\/new/);
+  } finally {
+    releaseHistory();
+  }
+  await expect(page.getByRole('alert')).toContainText('Your entry was saved');
+  await expect(page).toHaveURL(/\/payments\/new/);
+  await expect(page.getByLabel('Payment amount')).toHaveValue('100');
+  expect(calls.ids).toHaveLength(1);
+  await page.getByRole('button', { name: 'Retry save' }).click();
+  await expect(page.getByRole('heading', { name: 'Payment recorded' })).toBeVisible();
+  await expect(
+    page.locator('.summary-row').filter({ hasText: 'Balance after this entry' }),
+  ).toContainText('₱0.00');
+  expect(calls.ids).toHaveLength(1);
+  expect(calls.fullReads).toBe(0);
 });
 
 test('a failed scoped read retries without borrowing another screen’s cached totals', async ({

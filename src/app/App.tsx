@@ -157,11 +157,17 @@ export function App({
                   />
                   <Route
                     path="/utang/new"
-                    element={<TransactionForm key={`utang-${location.search}`} />}
+                    element={<TransactionForm key={`utang-${location.search}`} ownerId={ownerId} />}
                   />
                   <Route
                     path="/payments/new"
-                    element={<TransactionForm key={`payment-${location.search}`} payment />}
+                    element={
+                      <TransactionForm
+                        key={`payment-${location.search}`}
+                        ownerId={ownerId}
+                        payment
+                      />
+                    }
                   />
                   <Route path="/transactions/:id/confirmation" element={<Confirmation />} />
                   <Route
