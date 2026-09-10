@@ -31,8 +31,8 @@ export const notebookReadSchema = z.object({
   totals: readTotalsSchema,
 });
 
-// Writes/confirmations keep the complete notebook. Scoped snapshots are only
-// supplied to screens that explicitly consume their accompanying totals.
+// Forms consume directory balances. Confirmations with a customer hint retain
+// that customer's complete history; legacy links and correction forms stay full.
 export function viewForRoute(path: string, search: string): NotebookView {
   try {
     path = decodeURI(path);
@@ -42,7 +42,13 @@ export function viewForRoute(path: string, search: string): NotebookView {
   path = path.replace(/\/+$/, '') || '/';
   const route = path.toLowerCase();
   if (route === '/home' || route === '/') return { kind: 'home', day: storeNow().date };
-  if (route === '/customers' || route === '/search') return { kind: 'directory' };
+  if (['/customers', '/search', '/customers/new', '/utang/new', '/payments/new'].includes(route))
+    return { kind: 'directory' };
+  if (/^\/transactions\/[^/]+\/confirmation$/i.test(path)) {
+    const customerId = new URLSearchParams(search).get('customer');
+    if (customerId) return { kind: 'customer', customerId };
+    return { kind: 'full' };
+  }
   if (route === '/daily-record') {
     const today = storeNow().date;
     const day = new URLSearchParams(search).get('date') ?? today;

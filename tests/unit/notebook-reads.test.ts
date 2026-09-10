@@ -2,16 +2,16 @@ import { expect, test } from 'vitest';
 import { projectNotebook, viewForRoute } from '../../src/lib/notebookReads';
 import { createPilotFixture } from '../fixtures/pilot';
 
-test('scope routing keeps write and correction forms on the complete ledger', () => {
-  for (const path of [
-    '/utang/new',
-    '/payments/new',
-    '/customers/new',
-    '/CUSTOMERS/NEW/',
-    '/transactions/id/correct',
-    '/transactions/id/confirmation',
-  ])
-    expect(viewForRoute(path, '?customer=another')).toEqual({ kind: 'full' });
+test('scope routing uses directory balances and preserves complete confirmation history', () => {
+  for (const path of ['/utang/new', '/payments/new', '/customers/new', '/CUSTOMERS/NEW/'])
+    expect(viewForRoute(path, '?customer=another')).toEqual({ kind: 'directory' });
+  expect(viewForRoute('/transactions/id/correct', '?customer=another')).toEqual({ kind: 'full' });
+  expect(viewForRoute('/transactions/id/confirmation', '')).toEqual({ kind: 'full' });
+  expect(viewForRoute('/transactions/id/confirmation', '?customer=')).toEqual({ kind: 'full' });
+  expect(viewForRoute('/TRANSACTIONS/id/CONFIRMATION/', '?customer=Fictional%20One')).toEqual({
+    kind: 'customer',
+    customerId: 'Fictional One',
+  });
   expect(viewForRoute('/HOME/', '').kind).toBe('home');
   expect(viewForRoute('/h%6fme', '').kind).toBe('home');
   expect(viewForRoute('/Search/', '')).toEqual({ kind: 'directory' });
