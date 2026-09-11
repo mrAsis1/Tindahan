@@ -1,5 +1,14 @@
 # Tindahan progress
 
+## Fictional database backup-restoration rehearsal — 11 September 2026
+
+- Started from clean, up-to-date `develop` at `af3fcd9`, the checked merge of PR #13, on `codex/chore/backup-restore-rehearsal`. Stage remains **5: Readiness**; deployment is deferred.
+- Added a repeatable PGlite archive/file/restore test using all three repository migrations and fictional owners, opening balance, payments, replacement and void corrections. The source is closed before a fresh database loads the archive. Exact application-table/audit/notebook comparisons, the expected ₱90 balance, owner isolation, write restrictions, duplicate payment/correction retries and a new payment to zero passed. A post-backup transaction is intentionally absent after restore, demonstrating the recovery cutoff.
+- The archive stays in a uniquely named temporary file and is removed after the test. No hosted data, credentials, local-demo storage, application code, dependencies, migrations or release settings changed. This PGlite-only recovery test does not certify Supabase Auth, email, hosted backups, off-site retention or production recovery time.
+- Added the [recovery guide](backup-restoration.md), with a separate-destination hosted rehearsal and an evidence record. Backup frequency, retention, acceptable data loss and recovery time remain owner decisions before real store use; no operational backup policy was silently chosen.
+- Validation: the focused restoration test, TypeScript check, all **59 unit/PostgreSQL tests** and formatting (including `.github`) passed. Final-commit GitHub build, browser and performance checks must pass before the reviewed PR merges into `develop`.
+- Next: prepare the production/recovery configuration checklist while deployment remains deferred. Hosted backup restoration, real-device/network acceptance of pending changes, production/email setup and the small-store pilot remain open gates.
+
 ## Smaller transaction-form and confirmation reads — 11 September 2026
 
 - Started from clean, up-to-date `develop` at `45d7f75`, the checked merge of PR #12, on `codex/fix/scoped-transaction-reads`. Stage remains **5: Readiness**; deployment stays deferred.
