@@ -16,6 +16,8 @@ Supabase owner accounts also have [password recovery](docs/account-recovery.md) 
 
 [Pilot performance checks](docs/pilot-performance.md) measure an isolated fictional 500-customer/20,000-entry notebook with `npm run test:performance`. They report frontend timings separately from hosted database and physical-phone acceptance.
 
+[Backup-restoration readiness](docs/backup-restoration.md) includes an automated fictional database archive/restore rehearsal and the remaining hosted recovery checks. A production backup schedule and hosted restoration are still pending.
+
 The latest development code uses [smaller notebook reads](docs/scoped-notebook-reads.md). Supabase mode requires the new `20260910090000_scoped_notebook_reads.sql` migration before running this version. That migration and the matching frontend are not deployed yet; the existing hosted development app remains unchanged.
 
 Use **Node.js 24.18.0** and **npm 11.16.0** (versions are recorded in `.nvmrc` and `package.json`). From this repository:
