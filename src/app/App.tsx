@@ -1,15 +1,33 @@
-import { useState } from 'react';
+import { lazy, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { DataContext, refreshData, localRepository, useStoreQuery } from './data';
+import {
+  DataContext,
+  ReadTotalsContext,
+  refreshData,
+  localRepository,
+  useStoreQuery,
+} from './data';
+import { viewForRoute } from '../lib/notebookReads';
 import { backendMode } from '../lib/api/supabase';
 import { StoreSetup } from '../features/auth/AuthGate';
 import { Dialog, ErrorMessage, Page } from '../components/ui';
 import { Home } from '../features/dashboard/Home';
 import { Customers, CustomerDetail } from '../features/customers/Customers';
-import { NewCustomerPage } from '../features/customers/CustomerForm';
-import { TransactionForm } from '../features/transactions/TransactionForm';
-import { Confirmation } from '../features/transactions/Confirmation';
+import { PageLoadBoundary } from '../components/PageLoadBoundary';
 import { DailyRecord } from '../features/daily-record/DailyRecord';
+
+const NewCustomerPage = lazy(() =>
+  import('../features/customers/CustomerForm').then((m) => ({ default: m.NewCustomerPage })),
+);
+const TransactionForm = lazy(() =>
+  import('../features/transactions/TransactionForm').then((m) => ({ default: m.TransactionForm })),
+);
+const Confirmation = lazy(() =>
+  import('../features/transactions/Confirmation').then((m) => ({ default: m.Confirmation })),
+);
+const CorrectionForm = lazy(() =>
+  import('../features/transactions/CorrectionForm').then((m) => ({ default: m.CorrectionForm })),
+);
 
 export function App({
   ownerId = 'local',
@@ -18,15 +36,15 @@ export function App({
   ownerId?: string;
   onSignOut?: () => Promise<void>;
 }) {
-  const query = useStoreQuery(ownerId);
+  const location = useLocation();
+  const query = useStoreQuery(ownerId, viewForRoute(location.pathname, location.search));
   const cloud = backendMode === 'supabase';
   const [signOutError, setSignOutError] = useState('');
-  const location = useLocation();
   const navigate = useNavigate();
   const [reset, setReset] = useState(false);
   const [resetError, setResetError] = useState('');
   const [resetting, setResetting] = useState(false);
-  const hideNav = /\/(utang|payments)\/new|\/customers\/new|\/confirmation$/.test(
+  const hideNav = /\/(utang|payments)\/new|\/customers\/new|\/confirmation$|\/correct$/.test(
     location.pathname,
   );
   async function resetData(empty: boolean) {
@@ -70,7 +88,9 @@ export function App({
         </a>
         <div className="demo-bar">
           <span>
-            {cloud ? (query.data?.store?.name ?? 'Cloud notebook') : 'Local demo · fictional data'}
+            {cloud
+              ? (query.data?.notebook.store?.name ?? 'Cloud notebook')
+              : 'Local demo · fictional data'}
           </span>
           {cloud ? (
             <button
@@ -102,46 +122,72 @@ export function App({
           <main id="main" className="empty" role="status">
             Opening your notebook…
           </main>
-        ) : query.isError ? (
+        ) : query.isError && !query.data ? (
           <Page title="Notebook unavailable">
             <ErrorMessage message={query.error.message} />
             <button className="button" onClick={() => void query.refetch()}>
               Try again
             </button>
           </Page>
-        ) : cloud && !query.data.store ? (
+        ) : cloud && !query.data.notebook.store ? (
           <StoreSetup />
         ) : (
-          <DataContext.Provider value={query.data}>
-            <Routes>
-              <Route path="/" element={<Navigate to="/home" replace />} />
-              <Route path="/home" element={<Home />} />
-              <Route path="/daily-record" element={<DailyRecord />} />
-              <Route path="/search" element={<Customers key="search" search />} />
-              <Route path="/customers" element={<Customers key="customers" />} />
-              <Route path="/customers/new" element={<NewCustomerPage />} />
-              <Route path="/customers/:id" element={<CustomerDetail key={location.pathname} />} />
-              <Route
-                path="/utang/new"
-                element={<TransactionForm key={`utang-${location.search}`} />}
-              />
-              <Route
-                path="/payments/new"
-                element={<TransactionForm key={`payment-${location.search}`} payment />}
-              />
-              <Route path="/transactions/:id/confirmation" element={<Confirmation />} />
-              <Route
-                path="*"
-                element={
-                  <Page title="Page not found" back="/home">
-                    <p>Return to your notebook to keep going.</p>
-                  </Page>
-                }
-              />
-            </Routes>
+          <DataContext.Provider value={query.data.notebook}>
+            <ReadTotalsContext.Provider value={query.data.totals}>
+              {query.isError && (
+                <div className="note" role="alert">
+                  Couldn’t refresh the notebook. Displayed balances may be out of date. Your form
+                  details are still here.
+                  <button className="button plain" onClick={() => void query.refetch()}>
+                    Retry refresh
+                  </button>
+                </div>
+              )}
+              <PageLoadBoundary key={location.pathname}>
+                <Routes>
+                  <Route path="/" element={<Navigate to="/home" replace />} />
+                  <Route path="/home" element={<Home />} />
+                  <Route path="/daily-record" element={<DailyRecord />} />
+                  <Route path="/search" element={<Customers key="search" search />} />
+                  <Route path="/customers" element={<Customers key="customers" />} />
+                  <Route path="/customers/new" element={<NewCustomerPage />} />
+                  <Route
+                    path="/customers/:id"
+                    element={<CustomerDetail key={location.pathname} />}
+                  />
+                  <Route
+                    path="/utang/new"
+                    element={<TransactionForm key={`utang-${location.search}`} ownerId={ownerId} />}
+                  />
+                  <Route
+                    path="/payments/new"
+                    element={
+                      <TransactionForm
+                        key={`payment-${location.search}`}
+                        ownerId={ownerId}
+                        payment
+                      />
+                    }
+                  />
+                  <Route path="/transactions/:id/confirmation" element={<Confirmation />} />
+                  <Route
+                    path="/transactions/:id/correct"
+                    element={<CorrectionForm key={location.pathname} />}
+                  />
+                  <Route
+                    path="*"
+                    element={
+                      <Page title="Page not found" back="/home">
+                        <p>Return to your notebook to keep going.</p>
+                      </Page>
+                    }
+                  />
+                </Routes>
+              </PageLoadBoundary>
+            </ReadTotalsContext.Provider>
           </DataContext.Provider>
         )}
-        {!hideNav && (!cloud || !!query.data?.store) && (
+        {!hideNav && (!cloud || !!query.data?.notebook.store) && (
           <nav className="bottom-nav" aria-label="Main navigation">
             {[
               ['/home', '⌂', 'Home'],

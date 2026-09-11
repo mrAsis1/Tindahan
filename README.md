@@ -4,6 +4,26 @@
 
 ## Run the application
 
+For the owner-managed Vercel testing deployment, follow the [Vercel handoff](docs/vercel-testing.md). It uses the existing fictional development backend; this is not a real-store release.
+
+For phone testing, use the private [hosted development app](https://tindahan-development.monarchrenante27.chatgpt.site). See [hosting access and phone checks](docs/development-hosting.md) for the ChatGPT access gate and Tindahan owner sign-in.
+
+Development uses `develop` with short `codex/feature/`, `codex/fix/`, and `codex/chore/` task branches. `main` is the release baseline. See [the branch workflow](docs/branching.md) before starting a change.
+
+Customer history now supports [audited entry corrections](docs/corrections.md): void an incorrect entry with a reason, optionally replace it, and preserve the original in history. Both local demo and Supabase modes recheck historical balances.
+
+Supabase owner accounts also have [password recovery](docs/account-recovery.md) through **Forgot password?** on the sign-in screen. Development recovery links support ports 5173 and 5174.
+
+[Hosted save validation](docs/hosted-save-validation.md) covers simultaneous payments and retries after uncertain responses. Keep a failed save form open to retry its original request; check history before starting a new entry after closing or reloading it.
+
+[Pilot performance checks](docs/pilot-performance.md) measure an isolated fictional 500-customer/20,000-entry notebook with `npm run test:performance`. They report frontend timings separately from hosted database and physical-phone acceptance.
+
+[Backup-restoration readiness](docs/backup-restoration.md) includes an automated fictional database archive/restore rehearsal and the remaining hosted recovery checks. A production backup schedule and hosted restoration are still pending.
+
+[Production readiness](docs/production-readiness.md) tracks the remaining environment, email, recovery and release decisions. Deployment is deferred; the checklist does not mark these pending settings as configured.
+
+The latest development code uses [smaller notebook reads](docs/scoped-notebook-reads.md). Supabase mode requires the new `20260910090000_scoped_notebook_reads.sql` migration before running this version. That migration was applied to development on 11 September 2026; the matching frontend is not published yet, and the existing hosted development app remains unchanged.
+
 Use **Node.js 24.18.0** and **npm 11.16.0** (versions are recorded in `.nvmrc` and `package.json`). From this repository:
 
 ```sh
@@ -545,7 +565,7 @@ Work through the milestones one at a time. Use a simple checklist or optional Gi
 
 For each feature, implement the smallest complete flow, test it, and commit the working change before moving on. Check changes to financial rules against the balance tests. Keep generated files separate from hand-maintained source, and document any change that alters the meaning of stored records.
 
-Branches and pull requests are optional tools for organizing your own changes. No separate reviewer, team approval, or contributor process is required. Before a release, run the relevant checks and review your changes yourself against the acceptance scenarios below.
+Use the [branch workflow](docs/branching.md): task branches merge into `develop`, and tested releases merge into `main`. Review your own pull requests; no separate reviewer or team approval is required. Before a release, run the relevant checks and review your changes against the acceptance scenarios below.
 
 ### Key Acceptance Scenarios
 

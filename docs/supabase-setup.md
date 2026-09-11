@@ -2,6 +2,8 @@
 
 ## Current development project
 
+**Development database updated 11 September 2026:** `20260910090000_scoped_notebook_reads.sql` is now applied and all three migration versions match hosted history. Read-only verification passed; existing records are unchanged. The matching frontend remains unpublished; the existing hosted frontend continues using the original API. See [rollout results](scoped-notebook-reads.md#development-migration-results--11-september-2026).
+
 Project: **Tindahan Development**, reference `bzkbndvmspnyjkuyaudr`.
 
 The initial migration was applied through the project's SQL Editor on 6 September 2026 after verifying that its public schema had no existing tables. All five tables were checked afterward: row-level security enabled, anonymous reads denied, direct authenticated inserts denied. The application uses explicit RPCs for writes.
@@ -45,9 +47,9 @@ To revisit the original fictional demo, change `VITE_DATA_BACKEND=local` and res
 
 For this owner-only development app, use email/password and keep public user registration disabled in Supabase **Authentication → Sign In / Providers → User Signups**. Manually create the owner through the dashboard as described above. The initial SQL migration does not change hosted Auth settings.
 
-For the configured development project, public signup has been disabled through the dashboard. Its Site URL is saved as `http://127.0.0.1:5173`, with `http://localhost:5173` also saved in the redirect allow list.
+For the configured development project, public signup remains disabled. Its Site URL is now `https://tindahan-development.monarchrenante27.chatgpt.site`, with the exact hosted `/auth/reset-password` callback added and local development redirects preserved. See [private hosting and phone access](development-hosting.md).
 
-Set **Authentication → URL Configuration → Site URL** to `http://127.0.0.1:5173` during development. If using both hostnames, add `http://localhost:5173` as a redirect URL. Update these URLs when deploying. Password recovery, public signup, invitation delivery, and custom SMTP are not implemented in the app yet.
+Password recovery is implemented through **Forgot password?** on the owner sign-in screen. Hosted Auth also allows the exact `/auth/reset-password` callback on `127.0.0.1` and `localhost` at ports 5173 and 5174. See [account recovery](account-recovery.md) for instructions, email delivery checks, and deployment settings. Public signup remains disabled; invitation delivery and custom SMTP setup remain future work.
 
 `supabase/config.toml` is local CLI configuration; it does not automatically update hosted Auth settings. Docker is required for a full local Supabase stack. It was not available during this setup, so automated SQL tests use embedded PostgreSQL instead.
 
@@ -57,18 +59,26 @@ Source of truth: `supabase/migrations/20260906090000_create_tindahan.sql`.
 
 For a **different, new empty project**, apply that complete file once through SQL Editor or use the authenticated CLI. It contains a transaction, so a SQL error rolls back the migration. Do not rerun it on the configured development project: its tables already exist.
 
-Because the initial migration was applied in SQL Editor, register its version in CLI migration history before using CLI pushes on this project:
+The initial migration was applied in SQL Editor on 6 September and registered in CLI history on 7 September 2026. This checkout is now linked to the development project. Both local and remote histories show `20260906090000`; `db push --dry-run` reports the database is up to date. The repair only registered history; it did not rerun the schema or alter customer/ledger records.
+
+On 7 September, the CLI also applied `20260907090000_audited_corrections.sql`. Both versions now match local and hosted history, with no pending migrations. The hosted correction check preserved two voided utang versions and an active replacement on the fictional setup customer, whose current balance remains zero. See [corrections](corrections.md) for how to use the flow.
+
+On another computer, sign in and link the checkout, then verify history:
 
 ```sh
 npx supabase login
 npx supabase link --project-ref bzkbndvmspnyjkuyaudr
-npx supabase migration repair 20260906090000 --status applied --linked
 npx supabase migration list --linked
+npx supabase db push --dry-run
 ```
 
-Only mark this version applied after confirming its schema already exists. CLI login and linking are user-completed steps; keep access tokens and database passwords private. No CLI migration-history repair was performed automatically during setup.
+If interactive login reports JSON-output errors when launched by an agent, use `npx supabase login --agent no --output-format text`. Keep access tokens and database passwords private; the CLI stores authentication outside the repository, and project link metadata under `supabase/.temp` is ignored by Git.
+
+The one-time repair used on this project was `npx supabase migration repair 20260906090000 --status applied --linked`. Do not repeat it as a routine setup step. For other manually applied migrations, repair history only after verifying the corresponding schema really exists. See the [official CLI reference](https://supabase.com/docs/reference/cli/getting-started) for the distinction between history repair and applying SQL.
 
 For later changes, create a new migration file, test it, inspect `npx supabase db push --dry-run`, then push to the intended development project. Never use a remote database reset as an ordinary migration step.
+
+Follow [the branch workflow](branching.md) for database changes too. Switching Git branches does not switch hosted projects. GitHub checks use local fictional data and do not perform hosted migrations.
 
 ## What the backend enforces
 
@@ -81,7 +91,7 @@ For later changes, create a new migration file, test it, inspect `npx supabase d
 - Successful writes and audit events commit together. Browser roles cannot directly insert, edit, or delete ledger/audit rows.
 - `get_notebook` returns the store, customers, and entries together in a consistent snapshot.
 
-Only creation is implemented. Audited void/replacement corrections, opening-balance import UI, pagination, backup restoration checks, and a production readiness review remain future work. The full snapshot is deliberately simple for the small development dataset; it is not the final large-ledger pagination strategy.
+Creation and audited void/replacement corrections are implemented. See [correction behavior and rollout](corrections.md) for the new migration and atomic ledger validation. Opening-balance import UI, pagination, backup restoration checks, and a production readiness review remain future work. The full snapshot is deliberately simple for the small development dataset; it is not the final large-ledger pagination strategy.
 
 ## Checks
 
@@ -94,6 +104,6 @@ npm run format:check
 
 SQL tests run the actual migration, PostgreSQL roles/RLS, and RPC functions through PGlite. They stub only Supabase's `auth.users` and `auth.uid()` contract. These tests do not replace hosted Auth, network failure, or real multi-connection concurrency tests.
 
-Browser regression tests force local demo mode on port **4178**, so they do not reset or alter your cloud notebook. Hosted checks require an owner to sign in interactively.
+Browser regression tests force local demo mode on port **4178**. Recovery tests use a fictional Supabase host with intercepted Auth responses on **4179**. Neither suite changes your cloud notebook or sends live email. Hosted checks require an owner to sign in interactively.
 
 Official references: [React Auth](https://supabase.com/docs/guides/auth/quickstarts/react), [API keys](https://supabase.com/docs/guides/getting-started/api-keys), [row-level security](https://supabase.com/docs/guides/database/postgres/row-level-security), [database functions](https://supabase.com/docs/guides/database/functions), [migration workflow](https://supabase.com/docs/guides/local-development/database-migrations).

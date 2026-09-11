@@ -1,12 +1,18 @@
 import type { LedgerEntry, StoreData } from '../types';
 
 export const signedAmount = (entry: LedgerEntry) =>
-  entry.type === 'payment' ? -entry.amountCentavos : entry.amountCentavos;
+  entry.status === 'voided'
+    ? 0
+    : entry.type === 'payment'
+      ? -entry.amountCentavos
+      : entry.amountCentavos;
 export const chronological = (entries: LedgerEntry[]) =>
   [...entries].sort(
     (a, b) =>
       a.effectiveDate.localeCompare(b.effectiveDate) ||
       a.effectiveTime.localeCompare(b.effectiveTime) ||
+      (a.orderCreatedAt ?? a.createdAt).localeCompare(b.orderCreatedAt ?? b.createdAt) ||
+      (a.orderId ?? a.id).localeCompare(b.orderId ?? b.id) ||
       a.createdAt.localeCompare(b.createdAt) ||
       a.id.localeCompare(b.id),
   );
@@ -14,6 +20,14 @@ export const balance = (entries: LedgerEntry[], customerId?: string) =>
   entries
     .filter((e) => !customerId || e.customerId === customerId)
     .reduce((total, entry) => total + signedAmount(entry), 0);
+
+export function balancesByCustomer(entries: LedgerEntry[]) {
+  const balances = new Map<string, number>();
+  for (const entry of entries) {
+    balances.set(entry.customerId, (balances.get(entry.customerId) ?? 0) + signedAmount(entry));
+  }
+  return balances;
+}
 
 export function history(entries: LedgerEntry[], customerId: string) {
   let runningBalance = 0;
@@ -52,7 +66,9 @@ export function assertLedger(data: StoreData) {
 export function dailySummary(entries: LedgerEntry[], date: string) {
   const daily = entries.filter((e) => e.effectiveDate === date);
   const sum = (type: LedgerEntry['type']) =>
-    daily.filter((e) => e.type === type).reduce((total, e) => total + e.amountCentavos, 0);
+    daily
+      .filter((e) => e.type === type && e.status !== 'voided')
+      .reduce((total, e) => total + e.amountCentavos, 0);
   return {
     entries: chronological(daily).reverse(),
     utang: sum('utang'),

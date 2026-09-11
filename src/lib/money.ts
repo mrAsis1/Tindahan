@@ -8,5 +8,8 @@ export function parseMoney(value: string): number | null {
   return Number.isSafeInteger(amount) && amount > 0 && amount <= MAX_CENTAVOS ? amount : null;
 }
 
-export const money = (centavos: number) =>
-  `₱${(centavos / 100).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const pesoAmount = new Intl.NumberFormat('en-PH', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+export const money = (centavos: number) => `₱${pesoAmount.format(centavos / 100)}`;

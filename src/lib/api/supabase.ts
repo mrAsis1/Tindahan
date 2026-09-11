@@ -1,7 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import { customerSchema, newEntrySchema, storeSchema } from '../validation';
+import { correctionSchema, customerSchema, newEntrySchema, storeSchema } from '../validation';
 import type { Repository } from './repository';
+import { recoveryLocation } from '../../features/auth/recoveryHelpers';
+import { notebookReadSchema, type NotebookView, type NotebookRead } from '../notebookReads';
+
+export const initialRecovery =
+  typeof window === 'undefined'
+    ? { requested: false, hasError: false }
+    : recoveryLocation(window.location.href);
 
 export const backendMode = import.meta.env.VITE_DATA_BACKEND ?? 'local';
 const url = import.meta.env.VITE_SUPABASE_URL?.trim();
@@ -38,10 +45,20 @@ function rpcError(message: string, code?: string) {
     return new Error(
       'The database setup has not been applied yet. Run the Tindahan migration in Supabase, then try again.',
     );
-  return new Error(message);
+  return Object.assign(new Error(message), { code });
 }
 
 export const supabaseRepository: Repository = {
+  async correctEntry(input, requestId) {
+    const values = correctionSchema.parse(input);
+    const { error } = await client().rpc('correct_entry', {
+      p_request_id: requestId,
+      p_entry_id: values.entryId,
+      p_reason: values.reason,
+      p_replacement: values.replacement,
+    });
+    if (error) throw rpcError(error.message, error.code);
+  },
   async getData() {
     const { data, error } = await client().rpc('get_notebook');
     if (error) throw rpcError(error.message, error.code);
@@ -76,4 +93,15 @@ export const supabaseRepository: Repository = {
 export async function createStore(name: string) {
   const { error } = await client().rpc('create_store', { p_name: name.trim() });
   if (error) throw rpcError(error.message, error.code);
+}
+
+export async function readCloudNotebook(view: NotebookView): Promise<NotebookRead> {
+  if (view.kind === 'full') return { notebook: await supabaseRepository.getData(), totals: null };
+  const { data, error } = await client().rpc('read_notebook', {
+    p_view: view.kind,
+    p_day: 'day' in view ? view.day : null,
+    p_customer_id: view.kind === 'customer' ? view.customerId : null,
+  });
+  if (error) throw rpcError(error.message, error.code);
+  return notebookReadSchema.parse(data);
 }

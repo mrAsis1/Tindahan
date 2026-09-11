@@ -1,0 +1,51 @@
+name: Checks
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main, 'codex/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VITE_DATA_BACKEND: local
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm install --global npm@11.16.0
+      - run: npm ci
+      - run: npm run format:check
+      - run: npx prettier --check .github
+      - run: npm run build
+      - run: npm test
+      - name: Exclude unrelated Chrome package feed
+        shell: bash
+        run: |
+          # Playwright downloads its pinned Chromium separately. The runner's
+          # Chrome APT feed is unused and can break apt update during a release.
+          shopt -s nullglob
+          mkdir -p "$RUNNER_TEMP/tindahan-apt-sources"
+          for source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if grep -Eq 'https?://dl\.google\.com/linux/chrome(-stable)?/deb' "$source"; then
+              sudo mv -- "$source" "$RUNNER_TEMP/tindahan-apt-sources/"
+            fi
+          done
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: npm run test:performance

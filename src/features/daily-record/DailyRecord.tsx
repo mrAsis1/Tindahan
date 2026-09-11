@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useData } from '../../app/data';
+import { useData, useReadTotals } from '../../app/data';
 import { Dialog, Empty, EntryRow, Field, Page, SummaryRow } from '../../components/ui';
+import { PaginatedList } from '../../components/PaginatedList';
 import { dateLabel, storeNow, validDate } from '../../lib/dates';
-import { dailySummary } from '../../lib/ledger';
+import { chronological } from '../../lib/ledger';
 import { money } from '../../lib/money';
 
 function Calendar({
@@ -117,7 +118,12 @@ export function DailyRecord() {
   const requested = params.get('date') ?? today;
   const day = validDate(requested) && requested <= today ? requested : today;
   const [calendar, setCalendar] = useState(false);
-  const summary = dailySummary(entries, day);
+  const totals = useReadTotals()!;
+  const summary = useMemo(
+    () => ({ ...totals, entries: chronological(entries).reverse() }),
+    [entries, totals],
+  );
+  const names = useMemo(() => new Map(customers.map((c) => [c.id, c.name])), [customers]);
   const net = summary.utang - summary.payments;
   return (
     <Page title="Daily Record">
@@ -146,13 +152,14 @@ export function DailyRecord() {
       </section>
       <h2>{summary.entries.length} transactions · latest first</h2>
       {summary.entries.length ? (
-        summary.entries.map((entry) => (
-          <EntryRow
-            key={entry.id}
-            entry={entry}
-            name={customers.find((c) => c.id === entry.customerId)!.name}
-          />
-        ))
+        <PaginatedList
+          key={day}
+          items={summary.entries}
+          label="Daily transactions"
+          renderItem={(entry) => (
+            <EntryRow key={entry.id} entry={entry} name={names.get(entry.customerId)!} />
+          )}
+        />
       ) : (
         <Empty>No transactions on this day.</Empty>
       )}
