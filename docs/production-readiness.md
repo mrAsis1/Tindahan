@@ -2,6 +2,8 @@
 
 Prepared 11 September 2026 from `develop` at `14fe3d7` (PR #14). **Stage 5: Readiness is open. Deployment is deferred.** This document prepares configuration and evidence; it does not create services, change hosted settings, authorize spending or approve a release.
 
+Development update: on 11 September 2026 the owner authorized the free development migration. It is applied and read-only verification passed; frontend publication and production remain pending. The owner also specified **free services only**. This does not select or upgrade a production service.
+
 ## Environments and current evidence
 
 | Environment          | Purpose and current status                                                                                                                                                               |
@@ -21,7 +23,7 @@ Record choices here when agreed. Nothing in this table is a configured default.
 | Decision                                                        | Current value                                             | Needed to proceed                                                      |
 | --------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------- |
 | Production host, HTTPS address and tester access                | Pending; Vercel was discussed but deployment was deferred | A chosen host/address and access suitable for the intended store owner |
-| Monthly service budget                                          | Pending                                                   | Hosting, database, email and backup costs accepted before provisioning |
+| Monthly service budget                                          | Free services only                                        | Hosting, database, email and backup costs accepted before provisioning |
 | Production database region/project                              | Pending                                                   | Separate production project, region and public project identifier      |
 | Email provider and sender domain/address                        | Pending                                                   | Sender ownership, provider choice and private SMTP configuration       |
 | Maximum acceptable data loss                                    | Pending                                                   | How much recent work can be re-entered after failure                   |
@@ -39,7 +41,7 @@ Complete each item with a date, source commit, environment and evidence link. Un
 
 - [ ] Resume development rollout explicitly. Check the linked project identifier and remote migration history before any change.
 - [ ] Verify `20260906090000_create_tindahan.sql` and `20260907090000_audited_corrections.sql` remain installed. Repository records say both are applied; do not rerun them.
-- [ ] Review and dry-run the pending `20260910090000_scoped_notebook_reads.sql`, then apply it to development before publishing the matching frontend. It is locally tested and still undeployed. Follow [scoped-read rollout](scoped-notebook-reads.md).
+- [ ] Review and dry-run the pending `20260910090000_scoped_notebook_reads.sql`, then apply it to development before publishing the matching frontend. It was applied to development on 11 September 2026; frontend publication is still pending. Follow [scoped-read rollout](scoped-notebook-reads.md).
 - [ ] Verify preserved fictional balances/history and repeat [phone checks](hosted-phone-checks.md) on the updated version. Record phone, browser and network. The previous phone pass does not certify the pending frontend or large-notebook speed.
 - [ ] Assess [performance limits](pilot-performance.md): reduced form payloads are proven, but simulated slow-phone openings of 2.3–2.9 seconds do not pass the two-second or physical-device acceptance target.
 

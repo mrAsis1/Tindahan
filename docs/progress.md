@@ -1,5 +1,14 @@
 # Tindahan progress
 
+## Development scoped-read migration applied — 11 September 2026
+
+- Started from clean `develop` at `a3515d4` (checked PR #15) on `codex/chore/apply-development-scoped-reads`. The owner authorized the next database step if free and specified free services only. Stage remains **5: Readiness**.
+- Verified the existing development link `bzkbndvmspnyjkuyaudr`, both installed migration versions and a dry run showing only `20260910090000_scoped_notebook_reads.sql`. Applied that additive function successfully without creating/upgrading services or changing billing. All three versions now match; the post-application dry run is empty.
+- Added an opt-in read-only hosted verifier. Home, directory, seven customer histories and two entry dates match the original full notebook, including balances and correction metadata. Anonymous and missing-owner access are rejected. All 7 customers, 20 ledger rows and 30 audit rows retain identical before/after fingerprints; outstanding remains ₱0. No fixtures or financial writes were needed. [Detailed evidence](scoped-notebook-reads.md#development-migration-results--11-september-2026).
+- Updated current setup/README/readiness records while preserving historical progress. Frontend publication, Vercel configuration, physical-phone testing of this version, production recovery and the pilot remain pending. `main` is unchanged; no new browser/phone acceptance is claimed by the SQL check.
+- Validation: hosted read-only verification and migration history/dry-run checks passed. Script syntax and changed-file formatting checks also passed; final-commit GitHub checks must pass before the reviewed PR merges into `develop`.
+- Next: prepare the Vercel testing handoff with explicit development connection values, nested-route fallback and recovery callback requirements. The owner plans to connect Vercel; a production release still requires the remaining readiness decisions/evidence.
+
 ## Production and recovery configuration checklist — 11 September 2026
 
 - Started from clean, up-to-date `develop` at `14fe3d7`, the checked merge of PR #14, on `codex/chore/production-readiness-checklist`. Stage remains **5: Readiness**; deployment is deferred.

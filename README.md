@@ -20,7 +20,7 @@ Supabase owner accounts also have [password recovery](docs/account-recovery.md) 
 
 [Production readiness](docs/production-readiness.md) tracks the remaining environment, email, recovery and release decisions. Deployment is deferred; the checklist does not mark these pending settings as configured.
 
-The latest development code uses [smaller notebook reads](docs/scoped-notebook-reads.md). Supabase mode requires the new `20260910090000_scoped_notebook_reads.sql` migration before running this version. That migration and the matching frontend are not deployed yet; the existing hosted development app remains unchanged.
+The latest development code uses [smaller notebook reads](docs/scoped-notebook-reads.md). Supabase mode requires the new `20260910090000_scoped_notebook_reads.sql` migration before running this version. That migration was applied to development on 11 September 2026; the matching frontend is not published yet, and the existing hosted development app remains unchanged.
 
 Use **Node.js 24.18.0** and **npm 11.16.0** (versions are recorded in `.nvmrc` and `package.json`). From this repository:
 
