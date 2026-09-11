@@ -4,6 +4,8 @@
 
 ## Run the application
 
+For the owner-managed Vercel testing deployment, follow the [Vercel handoff](docs/vercel-testing.md). It uses the existing fictional development backend; this is not a real-store release.
+
 For phone testing, use the private [hosted development app](https://tindahan-development.monarchrenante27.chatgpt.site). See [hosting access and phone checks](docs/development-hosting.md) for the ChatGPT access gate and Tindahan owner sign-in.
 
 Development uses `develop` with short `codex/feature/`, `codex/fix/`, and `codex/chore/` task branches. `main` is the release baseline. See [the branch workflow](docs/branching.md) before starting a change.
