@@ -1,5 +1,13 @@
 # Tindahan progress
 
+## Production and recovery configuration checklist — 11 September 2026
+
+- Started from clean, up-to-date `develop` at `14fe3d7`, the checked merge of PR #14, on `codex/chore/production-readiness-checklist`. Stage remains **5: Readiness**; deployment is deferred.
+- Added [production readiness](production-readiness.md): environment separation, the pending development migration/frontend sequence, production build variables, exact recovery callbacks, custom SMTP verification, hosted restoration, release/rollback evidence and the small-store pilot. Linked existing evidence rather than treating local tests as hosted acceptance.
+- Host/address, service budget, sender/provider, backup policy, acceptable loss/recovery time and pilot scope remain explicit pending owner decisions. No service, account, hosting configuration, migration, application behavior or data was changed; `main` remains the release baseline.
+- Reviewed repository settings and current official Vite/Supabase guidance. Documentation formatting and relative-file-link checks passed; the final-commit GitHub checks must pass before merging the reviewed PR into `develop`.
+- Next dependency: choose the production services and recovery targets when setup resumes, then perform the checklist's development rollout and hosted evidence checks. This preparation does not authorize deployment or complete Stage 5.
+
 ## Fictional database backup-restoration rehearsal — 11 September 2026
 
 - Started from clean, up-to-date `develop` at `af3fcd9`, the checked merge of PR #13, on `codex/chore/backup-restore-rehearsal`. Stage remains **5: Readiness**; deployment is deferred.
