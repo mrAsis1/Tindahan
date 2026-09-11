@@ -2,7 +2,7 @@
 
 ## Current development project
 
-**Pending development change:** current source requires `20260910090000_scoped_notebook_reads.sql` for Home/customer/day reads. This additive migration is locally tested but not applied to the hosted project. Follow [scoped-read rollout](scoped-notebook-reads.md) when deployment resumes; the existing hosted frontend continues using the original API.
+**Development database updated 11 September 2026:** `20260910090000_scoped_notebook_reads.sql` is now applied and all three migration versions match hosted history. Read-only verification passed; existing records are unchanged. The matching frontend remains unpublished; the existing hosted frontend continues using the original API. See [rollout results](scoped-notebook-reads.md#development-migration-results--11-september-2026).
 
 Project: **Tindahan Development**, reference `bzkbndvmspnyjkuyaudr`.
 
