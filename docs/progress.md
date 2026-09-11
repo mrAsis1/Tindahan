@@ -1,5 +1,12 @@
 # Tindahan progress
 
+## Vercel testing configuration — 12 September 2026
+
+- Started from clean `develop` at `fd494f5` (checked PR #16) on `codex/chore/vercel-testing-handoff`. The owner requested a Vercel testing handoff and will connect the host personally. Free services only; no deployment or paid service is created here.
+- Added Vercel's documented Vite SPA rewrite, build command and output directory in `vercel.json`. Added the [handoff guide](vercel-testing.md) with development variables, exact recovery callback setup after the hostname is known, preservation of the existing Site/records, and phone/save/recovery acceptance checks.
+- This prepares a fictional-data testing release. Stage 5 remains open; real-store readiness and hosted Vercel verification are not claimed. Existing application code, database, Auth settings and Sites metadata are unchanged.
+- Configuration/documentation formatting and the application build/type check passed. Merge the checked task PR into `develop`. Promote the reviewed testing release through a checked `develop` → `main` PR; the owner will perform the Vercel connection and hosted acceptance afterward.
+
 ## Development scoped-read migration applied — 11 September 2026
 
 - Started from clean `develop` at `a3515d4` (checked PR #15) on `codex/chore/apply-development-scoped-reads`. The owner authorized the next database step if free and specified free services only. Stage remains **5: Readiness**.
