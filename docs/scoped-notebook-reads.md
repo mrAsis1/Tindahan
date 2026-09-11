@@ -1,6 +1,6 @@
 # Scoped notebook reads
 
-Home, customer lists, customer history, Daily Record, and new-customer/transaction forms no longer need every store transaction in each Supabase response. The additive migration `20260910090000_scoped_notebook_reads.sql` provides `read_notebook(p_view, p_day, p_customer_id)`. It has been tested in disposable embedded PostgreSQL, **not applied to the hosted development project**. Deployment remains deferred.
+Home, customer lists, customer history, Daily Record, and new-customer/transaction forms no longer need every store transaction in each Supabase response. The additive migration `20260910090000_scoped_notebook_reads.sql` provides `read_notebook(p_view, p_day, p_customer_id)`. It has been tested in disposable embedded PostgreSQL and **applied to the hosted development project on 11 September 2026** following owner authorization. Frontend publication remains deferred.
 
 ## What each screen loads
 
@@ -16,7 +16,7 @@ Home, customer lists, customer history, Daily Record, and new-customer/transacti
 
 Display pagination remains 50 rows. A customer with 4,000 entries still downloads all 4,000 when opening their history or a scoped confirmation; a busy day still downloads that day's entries. This change scopes requests to the screen, rather than adding server page cursors. Further optimization of large individual histories and days remains possible.
 
-New transaction confirmations include `?customer=<selected customer ID>` in the URL, so direct reloads use the same scoped history. The entry must actually exist in that history; a mismatched customer hint shows **Entry not found**, without trying the full notebook. The hint does not grant access: the existing read function still restricts records to the authenticated owner. Older links without a hint retain the complete read for compatibility. This frontend change needs no additional migration beyond the already-pending read API.
+New transaction confirmations include `?customer=<selected customer ID>` in the URL, so direct reloads use the same scoped history. The entry must actually exist in that history; a mismatched customer hint shows **Entry not found**, without trying the full notebook. The hint does not grant access: the existing read function still restricts records to the authenticated owner. Older links without a hint retain the complete read for compatibility. This frontend change needs no additional migration beyond the now-applied development read API.
 
 ## Financial and access guarantees
 
@@ -34,9 +34,33 @@ Database tests compare every scoped view with the old complete read after correc
 
 Browser regressions cover pagination, correction/save flows, cached summary refresh after payment, selected-customer balances, scoped/legacy/mismatched confirmation links, failed scoped-read retry and missing-migration handling. The performance harness refuses full-notebook reads on its measured routes and checks payload limits. Read-only responses are precomputed; the form fixture projects changed in-memory records after saves. Its timings do not measure SQL execution or hosted network latency. See [performance measurements](pilot-performance.md).
 
-## Deferred rollout
+## Development migration results — 11 September 2026
 
-Before running this version against Supabase, review the new migration and follow [the setup guide](supabase-setup.md): confirm the intended development project, inspect migration history and the dry run, then apply the pending migration when rollout resumes. Do not repair it as already applied or rerun/edit the two existing migrations.
+The owner authorized applying the migration if it required no paid upgrade. Used the existing development project `bzkbndvmspnyjkuyaudr`; no project, subscription, billing setting, seed, Auth configuration or frontend deployment was created or changed. The dry run identified only `20260910090000_scoped_notebook_reads.sql`. Applying it succeeded; all three local/remote versions now match and a subsequent dry run reports no pending migrations.
+
+Read-only hosted verification compared Home, directory, all seven customer histories and both existing entry dates against `get_notebook()` within one repeatable-read snapshot. Entries and correction metadata, customer selection, per-customer balances, whole-store outstanding and day totals matched. Outstanding remains ₱0. Anonymous execution and an authenticated role without an owner identity were rejected. This uses the CLI with the owner identity claim to test PostgreSQL behavior; it is not a new browser login or physical-phone acceptance test.
+
+Before and after the migration, complete-row fingerprints matched for all three record tables:
+
+| Table          | Rows | Matching before/after fingerprint  |
+| -------------- | ---: | ---------------------------------- |
+| customers      |    7 | `98f49b489c577c07d5634572554f937d` |
+| ledger_entries |   20 | `d4d80292e0904c485f99aec6a13788f7` |
+| audit_events   |   30 | `1871852be193086a2c4a724549f5ea67` |
+
+These MD5 comparisons detect changes for this rehearsal; they are not backups or security signatures. Existing fictional data was preserved. The first verification attempt incorrectly assumed the legacy notebook was newest-first; its Home comparison now correctly reverses the latest three from the legacy ascending order. The permission checks also read errors from the CLI's structured error output. The completed check passed without changing the migration or notebook data.
+
+To repeat the read-only check with the existing authorized CLI account:
+
+```sh
+node tests/hosted/verify-scoped-reads.mjs --development-read-only
+```
+
+The script verifies the development link and expected single store, reads current records in memory, and prints only counts, totals, permissions and fingerprints on success. It is opt-in, excluded from CI and creates no fixtures. It does not test hosted financial writes or replace the earlier save/concurrency evidence.
+
+## Deferred frontend rollout
+
+The development database prerequisite is complete. For a different project, follow [the setup guide](supabase-setup.md) and verify its actual history before applying any missing migrations. Do not rerun/edit installed migrations or repair an uninstalled migration as applied.
 
 Apply the read function before publishing the matching frontend. The existing hosted frontend continues to use `get_notebook()` and remains compatible with this additive migration. If a frontend rollback is needed, restore the previous frontend; the new read function can stay installed without deleting records or reverting the schema.
 
