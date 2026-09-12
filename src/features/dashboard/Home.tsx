@@ -15,7 +15,7 @@ export function Home() {
     <Page title="Magandang araw!" brand="TINDAHAN">
       <p className="muted small">{dateLabel(today, true)}</p>
       <section className="card hero">
-        <p className="eyebrow">TOTAL OUTSTANDING UTANG</p>
+        <p className="eyebrow">TOTAL DEBT</p>
         <p className="amount">{money(totals.outstanding)}</p>
         <p className="small">{totals.withBalance} customers with a balance</p>
       </section>
@@ -28,7 +28,7 @@ export function Home() {
         </Link>
       </div>
       <section className="card">
-        <h2>Today at a glance</h2>
+        <h2>Today’s Overview</h2>
         <SummaryRow label="New utang" value={money(totals.utang)} tone="utang" />
         <SummaryRow label="Payments received" value={money(totals.payments)} tone="payment" />
       </section>
