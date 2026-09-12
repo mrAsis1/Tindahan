@@ -186,3 +186,20 @@ describe('Ledger and demo persistence', () => {
     expect(await repository.getData()).toEqual({ version: 1, customers: [], entries: [] });
   });
 });
+
+it('rejects duplicate customer details without modifying storage and preserves retries', async () => {
+  const { repository, storage } = setup({ version: 1, customers: [], entries: [] });
+  const values = { name: 'Fictional One', contactNumber: '', identifyingNote: 'Near bakery' };
+  const first = await repository.createCustomer(values, 'first');
+  const before = storage.getItem(STORAGE_KEY);
+  await expect(
+    repository.createCustomer(
+      { ...values, name: '  fictional   ONE ', identifyingNote: 'near BAKERY' },
+      'second',
+    ),
+  ).rejects.toThrow('already exists');
+  expect(storage.getItem(STORAGE_KEY)).toBe(before);
+  expect(await repository.createCustomer(values, 'first')).toEqual(first);
+  await repository.createCustomer({ ...values, identifyingNote: 'Near school' }, 'different');
+  expect((await repository.getData()).customers).toHaveLength(2);
+});

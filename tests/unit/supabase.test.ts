@@ -423,3 +423,22 @@ describe('Scoped notebook reads', () => {
     expect(customer.notebook.customers).toHaveLength(1);
   }, 30000);
 });
+
+it('rejects normalized duplicate customer details per owner without adding audit rows', async () => {
+  const values = [entryId(900), 'Fictional Duplicate Check', '', 'Near bakery'];
+  const sql = 'select public.create_customer($1::uuid, $2, $3, $4)';
+  const first = await asOwner(ownerA, sql, values);
+  const before = (await asOwner(ownerA, 'select * from public.audit_events order by id')).rows;
+  await expect(
+    asOwner(ownerA, sql, [entryId(901), '  fictional   DUPLICATE check ', '', 'near BAKERY']),
+  ).rejects.toThrow('already exists');
+  expect((await asOwner(ownerA, 'select * from public.audit_events order by id')).rows).toEqual(
+    before,
+  );
+  expect((await asOwner(ownerA, sql, values)).rows).toEqual(first.rows);
+  await expect(asOwner(ownerA, sql, [entryId(900), 'Changed', '', ''])).rejects.toThrow(
+    'different customer details',
+  );
+  await asOwner(ownerA, sql, [entryId(902), values[1], '', 'Near school']);
+  await asOwner(ownerB, sql, [entryId(903), ...values.slice(1)]);
+});
