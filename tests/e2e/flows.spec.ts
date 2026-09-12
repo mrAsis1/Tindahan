@@ -194,3 +194,42 @@ test('simultaneous demo tabs cannot overpay a customer together', async ({ page,
   await expect(page.locator('.amount')).toHaveText('₱250.00');
   await second.close();
 });
+
+test('Home labels and duplicate customer selection preserve the existing notebook', async ({
+  page,
+}) => {
+  await expect(page.getByText('TOTAL DEBT', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today’s Overview' })).toBeVisible();
+  await page.goto('/customers/new');
+  await page.getByLabel('Customer name').fill('Fictional Duplicate');
+  await page.getByRole('button', { name: 'Save customer', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Fictional Duplicate', exact: true }),
+  ).toBeVisible();
+  const original = page.url();
+  await page.goto('/customers/new');
+  await page.getByLabel('Customer name').fill('  fictional   DUPLICATE ');
+  await page.getByRole('button', { name: 'Save customer', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('already exists');
+  await page
+    .getByRole('button', { name: 'Use existing: Fictional Duplicate', exact: true })
+    .click();
+  await expect(page).toHaveURL(original);
+  await page.goto('/utang/new');
+  await page.getByLabel('Amount', { exact: true }).fill('150');
+  await page.getByRole('button', { name: /New customer/i }).click();
+  await page.getByRole('dialog').getByLabel('Customer name').fill('Fictional Duplicate');
+  await page
+    .getByRole('button', { name: 'Use existing: Fictional Duplicate', exact: true })
+    .click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(page.getByLabel('Amount', { exact: true })).toHaveValue('150');
+  await page.goto('/customers/new');
+  await page.getByLabel('Customer name').fill('Fictional Duplicate');
+  await page.getByLabel('Identifying note (optional)').fill('Different person near school');
+  await page.getByRole('button', { name: 'Save customer', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Fictional Duplicate', exact: true }),
+  ).toBeVisible();
+  expect(page.url()).not.toBe(original);
+});
