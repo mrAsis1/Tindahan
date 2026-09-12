@@ -4,6 +4,8 @@
 
 ## Run the application
 
+The latest development change adds [customer duplicate checks](docs/customer-duplicates.md). Full Supabase enforcement requires `20260913090000_customer_duplicate_guard.sql`, which is tested locally and pending on hosted projects. Existing customer records are preserved.
+
 For the owner-managed Vercel testing deployment, follow the [Vercel handoff](docs/vercel-testing.md). It uses the existing fictional development backend; this is not a real-store release.
 
 For phone testing, use the private [hosted development app](https://tindahan-development.monarchrenante27.chatgpt.site). See [hosting access and phone checks](docs/development-hosting.md) for the ChatGPT access gate and Tindahan owner sign-in.
