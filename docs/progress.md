@@ -1,5 +1,13 @@
 # Tindahan progress
 
+## Home wording and duplicate customers — 13 September 2026
+
+- Started from clean, current `develop` at `6bdaad3` (PR #17) on `codex/fix/customer-duplicate-check`. The owner reports Vercel Preview development login now works; the store login remains unresolved. These reports do not complete Stage 5 readiness. The testing release on `main` is preserved.
+- Home now says **TOTAL DEBT** and **Today’s Overview**. Customer forms offer existing same-name customers and reject matching name/contact/note combinations, ignoring case and extra whitespace. Distinct people can share a name with different contact details or identifying notes. Existing records are preserved.
+- Added matching local-repository enforcement and an additive Supabase migration that preserves owner isolation, audit history and same-request retries. See [duplicate checks and rollout](customer-duplicates.md). The migration is not applied to either hosted project; no real-store deployment or data changes were made.
+- Local build/type checking, all **61 unit/PostgreSQL tests**, and **24 mobile/desktop browser flow checks** passed, including duplicate rejection, selecting existing customers without losing an utang draft, and distinct same-name customers. Final-commit GitHub checks must pass before the reviewed PR merges into `develop`.
+- Next rollout step: apply and verify the new migration on development, check Preview with fictional customers, then prepare a checked release for the store environment. `main` remains reserved for releases.
+
 ## Vercel testing configuration — 12 September 2026
 
 - Started from clean `develop` at `fd494f5` (checked PR #16) on `codex/chore/vercel-testing-handoff`. The owner requested a Vercel testing handoff and will connect the host personally. Free services only; no deployment or paid service is created here.

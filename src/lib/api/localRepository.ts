@@ -3,6 +3,7 @@ import { assertLedger } from '../ledger';
 import { correctionSchema, customerSchema, newEntrySchema, storeSchema } from '../validation';
 import { storeNow } from '../dates';
 import { createSeed } from './seed';
+import { sameCustomer, duplicateCustomerMessage } from '../customerIdentity';
 import type { Repository } from './repository';
 
 export const STORAGE_KEY = 'tindahan.local-demo.v1';
@@ -56,6 +57,8 @@ export function createLocalRepository(storage: Pick<Storage, 'getItem' | 'setIte
             throw new Error('This save ID was already used for different customer details.');
           return existing;
         }
+        if (data.customers.some((c) => sameCustomer(c, values)))
+          throw new Error(duplicateCustomerMessage);
         const customer = { ...values, id: requestId, createdAt: new Date().toISOString() };
         persist({ ...data, customers: [...data.customers, customer] });
         return customer;

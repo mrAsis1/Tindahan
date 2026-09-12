@@ -2,10 +2,11 @@ import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { repository, refreshData } from '../../app/data';
+import { repository, refreshData, useData } from '../../app/data';
 import { ErrorMessage, Field, Page } from '../../components/ui';
 import { customerSchema } from '../../lib/validation';
 import type { Customer, NewCustomer } from '../../types';
+import { customerText, sameCustomer, duplicateCustomerMessage } from '../../lib/customerIdentity';
 
 export function CustomerForm({
   onSaved,
@@ -17,21 +18,29 @@ export function CustomerForm({
   inUtang?: boolean;
 }) {
   const requestId = useRef(crypto.randomUUID());
+  const { customers } = useData();
   const {
     register,
     handleSubmit,
     setError,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<NewCustomer>({
     resolver: zodResolver(customerSchema),
     defaultValues: { name: '', contactNumber: '', identifyingNote: '' },
   });
+  const name = watch('name');
+  const matches = customers.filter((c) => customerText(c.name) === customerText(name));
   return (
     <form
       className="stack"
       noValidate
       onSubmit={handleSubmit(async (values) => {
         try {
+          if (customers.some((c) => c.id !== requestId.current && sameCustomer(c, values))) {
+            setError('name', { message: duplicateCustomerMessage });
+            return;
+          }
           const customer = await repository.createCustomer(values, requestId.current);
           await refreshData();
           onSaved(customer);
@@ -52,6 +61,29 @@ export function CustomerForm({
           {...register('name')}
         />
       </Field>
+      {matches.length > 0 && (
+        <div className="note" aria-live="polite">
+          <strong>Customers with this name already exist.</strong>
+          <p className="small">
+            Select the right person below. For a different person, add a distinct contact number or
+            identifying note.
+          </p>
+          {matches.map((customer) => (
+            <button
+              className="button plain"
+              type="button"
+              key={customer.id}
+              disabled={isSubmitting}
+              onClick={() => onSaved(customer)}
+            >
+              Use existing: {customer.name}
+              {customer.contactNumber || customer.identifyingNote
+                ? ` · ${[customer.contactNumber, customer.identifyingNote].filter(Boolean).join(' · ')}`
+                : ''}
+            </button>
+          ))}
+        </div>
+      )}
       <Field label="Contact number (optional)" id="contact" error={errors.contactNumber?.message}>
         <input
           id="contact"
