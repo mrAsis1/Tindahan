@@ -103,6 +103,29 @@ async function fakeAuth(
   return calls;
 }
 
+test('shows and hides the login password without submitting or losing it', async ({ page }) => {
+  const calls = await fakeAuth(page);
+  await page.goto('/home');
+  const password = page.getByLabel('Password', { exact: true });
+  await password.fill('Old-fictional-password');
+  await expect(password).toHaveAttribute('type', 'password');
+  await page.getByRole('button', { name: 'Show password', exact: true }).click();
+  await expect(password).toHaveAttribute('type', 'text');
+  await expect(password).toHaveValue('Old-fictional-password');
+  await page.getByRole('button', { name: 'Hide password', exact: true }).click();
+  await expect(password).toHaveAttribute('type', 'password');
+  expect(calls.notebookReads).toBe(0);
+  await page.getByLabel('Email', { exact: true }).fill(owner.email);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await page.reload();
+  await expect(password).toHaveAttribute('type', 'password');
+  await expect(password).toHaveValue('');
+});
+
 test('requests a reset with the exact app redirect and a generic confirmation', async ({
   page,
 }) => {

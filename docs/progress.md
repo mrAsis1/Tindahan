@@ -1,5 +1,14 @@
 # Tindahan progress
 
+## Password visibility and remembered login — 15 September 2026
+
+- Added an accessible Show password / Hide password button to sign-in, with passwords hidden initially and no form submission when toggling.
+- Made persistent browser session storage explicit and report failed storage writes instead of silently falling back to an in-memory login. Existing project storage keys, refresh-token behavior and device-local sign-out are preserved; passwords are never saved.
+- The real-SDK regression checks pass for an empty device, saved login, reopening two hours after access-token expiry, token rotation, and clearing the session after sign-out. Added mobile/desktop coverage for the toggle, signed-in reload and signed-out reload.
+- Read the Asis_Store project's session settings through the Management API: no fixed or inactivity timeout, multiple device sessions allowed, automatic refresh rotation enabled. No backend change is needed; the reported repeated login is not reproduced. See [session details](login-sessions.md).
+- The owner explicitly requested checking and pushing this update to production. Release follows the existing checked task → develop → main workflow and connected Vercel deployment. No database migration or notebook-data changes are included.
+- Local build/type checking, formatting, and all 63 unit/database tests passed. Final browser and release checks are recorded on the pull requests. Normalized local line endings for formatting checks; there is no unrelated source change.
+
 ## Home wording and duplicate customers — 13 September 2026
 
 - Started from clean, current `develop` at `6bdaad3` (PR #17) on `codex/fix/customer-duplicate-check`. The owner reports Vercel Preview development login now works; the store login remains unresolved. These reports do not complete Stage 5 readiness. The testing release on `main` is preserved.
