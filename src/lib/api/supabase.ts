@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { authOptions } from './authOptions';
 import { correctionSchema, customerSchema, newEntrySchema, storeSchema } from '../validation';
 import type { Repository } from './repository';
 import { recoveryLocation } from '../../features/auth/recoveryHelpers';
@@ -25,7 +26,7 @@ export const configurationError = !['local', 'supabase'].includes(backendMode)
 export const supabase =
   backendMode === 'supabase' && !configurationError
     ? createClient(url!, key!, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+        auth: authOptions,
       })
     : null;
 

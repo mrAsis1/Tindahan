@@ -22,6 +22,7 @@ function SignIn({
 }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   async function submit(event: FormEvent) {
@@ -61,18 +62,29 @@ function SignIn({
         <Field label="Password" id="password">
           <input
             id="password"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             required
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
         </Field>
+        <button
+          className="button plain"
+          type="button"
+          aria-controls="password"
+          aria-pressed={showPassword}
+          onClick={() => setShowPassword((shown) => !shown)}
+        >
+          {showPassword ? 'Hide password' : 'Show password'}
+        </button>
         <ErrorMessage message={error} />
         <button className="button" disabled={busy}>
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
-        <p className="small muted">Use the owner account set up for this store.</p>
+        <p className="small muted">
+          Stay signed in on this browser. Sign out when using a shared device.
+        </p>
       </form>
       <Link className="button plain" to={FORGOT_PATH}>
         Forgot password?
