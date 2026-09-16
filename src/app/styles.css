@@ -1,11 +1,11 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @theme {
   --color-paper: #faf7f2;
   --color-ink: #20352c;
   --color-store-green: #176445;
   --color-store-orange: #ab451f;
-  --font-sans: 'Inter', Arial, sans-serif;
+  --font-sans: "Inter", Arial, sans-serif;
 }
 
 @layer base {
@@ -355,6 +355,37 @@
   .money-input input {
     padding-left: 30px;
   }
+  .password-input {
+    position: relative;
+  }
+  .password-input input {
+    padding-right: 48px;
+  }
+  .password-toggle {
+    position: absolute;
+    right: 2px;
+    top: 2px;
+    bottom: 2px;
+    width: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    color: #66746c;
+  }
+  .forgot-password {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: fit-content;
+    min-height: 44px;
+    margin-left: auto;
+    font-size: 14px;
+    font-weight: 600;
+    color: #66746c;
+  }
+  .forgot-password:hover {
+    text-decoration: underline;
+  }
   .back {
     display: inline-flex;
     align-items: center;
@@ -411,8 +442,8 @@
     padding: 8px 16px;
     color: var(--color-store-green);
   }
-  .chips button[aria-pressed='true'],
-  .calendar button[aria-pressed='true'] {
+  .chips button[aria-pressed="true"],
+  .calendar button[aria-pressed="true"] {
     background: var(--color-store-green);
     color: white;
   }
