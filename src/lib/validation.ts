@@ -37,9 +37,32 @@ export const correctionSchema = z.object({
     .pick({ amountCentavos: true, description: true, effectiveDate: true })
     .nullable(),
 });
+export const customerChangeSchema = z.object({
+  customerId: z.string().min(1),
+  expectedRevision: z.number().int().nonnegative(),
+  details: customerSchema,
+  deleted: z.boolean(),
+});
+export const savedCustomerSchema = customerSchema.extend({
+  id: z.string().min(1),
+  createdAt: z.iso.datetime(),
+  deleted: z.boolean().optional(),
+  revision: z.number().int().nonnegative().optional(),
+  changes: z
+    .array(
+      customerChangeSchema.extend({
+        requestId: z.string().min(1),
+        before: customerSchema.extend({ deleted: z.boolean() }),
+        after: customerSchema.extend({ deleted: z.boolean() }),
+        createdAt: z.iso.datetime(),
+        createdBy: z.string().min(1),
+      }),
+    )
+    .optional(),
+});
 export const storeSchema = z.object({
   version: z.literal(1),
-  customers: z.array(customerSchema.extend({ id: z.string().min(1), createdAt: z.iso.datetime() })),
+  customers: z.array(savedCustomerSchema),
   entries: z.array(
     newEntrySchema.extend({
       id: z.string().min(1),

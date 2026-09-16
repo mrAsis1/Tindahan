@@ -344,6 +344,10 @@
     display: block;
     margin-bottom: 8px;
   }
+  .customer-changes[open] .when-closed,
+  .customer-changes:not([open]) .when-open {
+    display: none;
+  }
   .money-input {
     position: relative;
   }

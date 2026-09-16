@@ -91,6 +91,7 @@ export function CustomerRow({ customer, balance }: { customer: Customer; balance
     <Link to={`/customers/${customer.id}`} className="record customer-row">
       <div>
         <strong>{customer.name}</strong>
+        {customer.deleted && <p>Deleted · history kept</p>}
         <p>{balance ? 'Current utang · View history →' : 'Fully paid · View history →'}</p>
         {(customer.contactNumber || customer.identifyingNote) && (
           <p>{[customer.contactNumber, customer.identifyingNote].filter(Boolean).join(' · ')}</p>

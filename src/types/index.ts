@@ -4,6 +4,23 @@ export interface Customer {
   contactNumber: string;
   identifyingNote: string;
   createdAt: string;
+  deleted?: boolean;
+  revision?: number;
+  changes?: CustomerChange[];
+}
+
+export interface CustomerChangeInput {
+  customerId: string;
+  expectedRevision: number;
+  details: NewCustomer;
+  deleted: boolean;
+}
+export interface CustomerChange extends CustomerChangeInput {
+  requestId: string;
+  before: NewCustomer & { deleted: boolean };
+  after: NewCustomer & { deleted: boolean };
+  createdAt: string;
+  createdBy: string;
 }
 
 export type EntryType = 'opening_balance' | 'utang' | 'payment';
