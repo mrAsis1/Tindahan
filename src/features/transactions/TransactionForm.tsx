@@ -6,6 +6,8 @@ import type { z } from 'zod';
 import { queryClient, readNotebook, repository, useData, useReadTotals } from '../../app/data';
 import { Dialog, ErrorMessage, Field, Page, SummaryRow } from '../../components/ui';
 import { CustomerForm } from '../customers/CustomerForm';
+import { PaginatedList } from '../../components/PaginatedList';
+import { customerText } from '../../lib/customerIdentity';
 import { money, parseMoney } from '../../lib/money';
 import { storeNow } from '../../lib/dates';
 import { transactionSchema } from '../../lib/validation';
@@ -23,6 +25,9 @@ export function TransactionForm({
   const totals = useReadTotals()!;
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const [customerQuery, setCustomerQuery] = useState(
+    () => data.customers.find((c) => c.id === params.get('customer'))?.name ?? '',
+  );
   const [addingCustomer, setAddingCustomer] = useState(false);
   const requestId = useRef(crypto.randomUUID());
   const attemptedValues = useRef<string | null>(null);
@@ -51,6 +56,11 @@ export function TransactionForm({
   const overpaid =
     payment && !retrying && !savedEntryId.current && amount !== null && amount > current;
   const customer = data.customers.find((c) => c.id === customerId);
+  const matches = !customerId
+    ? data.customers.filter(
+        (c) => !c.deleted && customerText(c.name).includes(customerText(customerQuery)),
+      )
+    : [];
   return (
     <Page
       title={payment ? 'Add Payment' : 'Add Utang'}
@@ -132,22 +142,49 @@ export function TransactionForm({
         })}
       >
         <Field label="Customer" id="customer" error={errors.customerId?.message}>
-          <select
+          <input type="hidden" {...register('customerId')} />
+          <input
             id="customer"
+            type="search"
+            autoComplete="off"
+            placeholder="Type a customer name…"
+            value={customerQuery}
             aria-invalid={!!errors.customerId}
-            {...register('customerId')}
-            value={customerId}
-          >
-            <option value="">Select a customer…</option>
-            {data.customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-                {c.contactNumber || c.identifyingNote
-                  ? ` · ${c.contactNumber || c.identifyingNote}`
-                  : ''}
-              </option>
-            ))}
-          </select>
+            onChange={(event) => {
+              setCustomerQuery(event.target.value);
+              setValue('customerId', '');
+            }}
+          />
+          {!!matches.length && (
+            <div className="customer-suggestions">
+              <PaginatedList
+                key={customerQuery}
+                items={matches}
+                label="Matching customers"
+                renderItem={(match) => (
+                  <button
+                    key={match.id}
+                    className="button plain"
+                    type="button"
+                    onClick={() => {
+                      setCustomerQuery(match.name);
+                      setValue('customerId', match.id, { shouldValidate: true });
+                    }}
+                  >
+                    {match.name}
+                    {match.contactNumber || match.identifyingNote
+                      ? ` · ${[match.contactNumber, match.identifyingNote].filter(Boolean).join(' · ')}`
+                      : ''}
+                  </button>
+                )}
+              />
+            </div>
+          )}
+          {!!customerQuery.trim() && !customerId && !matches.length && (
+            <p className="small muted" role="status">
+              No existing customer found.
+            </p>
+          )}
         </Field>
         {customer && (
           <div className={payment ? 'note' : 'card debt'}>
@@ -167,101 +204,109 @@ export function TransactionForm({
               : 'Add utang before recording another payment.'}
           </p>
         )}
-        <Field
-          label={payment ? 'Payment amount' : 'Amount'}
-          id="amount"
-          error={errors.amount?.message}
-        >
-          <div className="money-input">
-            <span aria-hidden="true">₱</span>
-            <input
-              id="amount"
-              inputMode="decimal"
-              placeholder="0.00"
-              autoComplete="off"
-              aria-invalid={!!errors.amount || overpaid}
-              {...register('amount')}
-            />
-          </div>
-        </Field>
-        {!payment && (
+        {!payment && !customerId && !matches.length && (
+          <button type="button" className="button plain" onClick={() => setAddingCustomer(true)}>
+            + Add a new customer
+          </button>
+        )}
+        {customer && !customer.deleted && (
           <>
             <Field
-              label="Item / description (optional)"
-              id="description"
-              error={errors.description?.message}
+              label={payment ? 'Payment amount' : 'Amount'}
+              id="amount"
+              error={errors.amount?.message}
             >
-              <textarea
-                id="description"
-                rows={2}
-                placeholder="e.g. Rice & canned goods"
-                {...register('description')}
-              />
-            </Field>
-            <button type="button" className="button plain" onClick={() => setAddingCustomer(true)}>
-              + Add a new customer
-            </button>
-          </>
-        )}
-        <Field label="Date" id="date" error={errors.effectiveDate?.message}>
-          <input
-            id="date"
-            type="date"
-            min="1900-01-01"
-            max={storeNow().date}
-            {...register('effectiveDate')}
-          />
-        </Field>
-        {payment && customer && !retrying && !savedEntryId.current && (
-          <div className="note" aria-live="polite">
-            <SummaryRow label="Payment received" value={money(amount ?? 0)} tone="payment" />
-            {overpaid ? (
-              <p className="error">Payment is higher than the remaining balance.</p>
-            ) : (
-              <>
-                <SummaryRow
-                  label="Remaining utang"
-                  value={money(current - (amount ?? 0))}
-                  tone="utang"
+              <div className="money-input">
+                <span aria-hidden="true">₱</span>
+                <input
+                  id="amount"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  autoComplete="off"
+                  aria-invalid={!!errors.amount || overpaid}
+                  {...register('amount')}
                 />
-                <p className="small payment">
-                  {amount === current ? 'Full payment' : 'Partial payment'} · balance updates on
-                  save
-                </p>
+              </div>
+            </Field>
+            {!payment && (
+              <>
+                <Field
+                  label="Item / description (optional)"
+                  id="description"
+                  error={errors.description?.message}
+                >
+                  <textarea
+                    id="description"
+                    rows={2}
+                    placeholder="e.g. Rice & canned goods"
+                    {...register('description')}
+                  />
+                </Field>
               </>
             )}
-          </div>
+            <Field label="Date" id="date" error={errors.effectiveDate?.message}>
+              <input
+                id="date"
+                type="date"
+                min="1900-01-01"
+                max={storeNow().date}
+                {...register('effectiveDate')}
+              />
+            </Field>
+            {payment && customer && !retrying && !savedEntryId.current && (
+              <div className="note" aria-live="polite">
+                <SummaryRow label="Payment received" value={money(amount ?? 0)} tone="payment" />
+                {overpaid ? (
+                  <p className="error">Payment is higher than the remaining balance.</p>
+                ) : (
+                  <>
+                    <SummaryRow
+                      label="Remaining utang"
+                      value={money(current - (amount ?? 0))}
+                      tone="utang"
+                    />
+                    <p className="small payment">
+                      {amount === current ? 'Full payment' : 'Partial payment'} · balance updates on
+                      save
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+            <ErrorMessage message={errors.root?.message} />
+            <button
+              className={`button ${payment ? '' : 'orange'}`}
+              disabled={isSubmitting || (!retrying && payment && !!customer && current === 0)}
+            >
+              {isSubmitting
+                ? 'Saving…'
+                : retrying
+                  ? 'Retry save'
+                  : payment
+                    ? 'Record payment'
+                    : 'Save utang'}
+            </button>
+            {retrying && (
+              <p className="small muted">
+                Keep these details to retry the same save. Before leaving this form, check the
+                customer history to avoid entering it twice.
+              </p>
+            )}
+            <p className="small muted">
+              {backendMode === 'local'
+                ? 'Saved only in this browser’s demo notebook.'
+                : 'Saves to your private store notebook. An internet connection is required.'}
+            </p>
+          </>
         )}
-        <ErrorMessage message={errors.root?.message} />
-        <button
-          className={`button ${payment ? '' : 'orange'}`}
-          disabled={isSubmitting || (!retrying && payment && !!customer && current === 0)}
-        >
-          {isSubmitting
-            ? 'Saving…'
-            : retrying
-              ? 'Retry save'
-              : payment
-                ? 'Record payment'
-                : 'Save utang'}
-        </button>
-        {retrying && (
-          <p className="small muted">
-            Keep these details to retry the same save. Before leaving this form, check the customer
-            history to avoid entering it twice.
-          </p>
-        )}
-        <p className="small muted">
-          {backendMode === 'local'
-            ? 'Saved only in this browser’s demo notebook.'
-            : 'Saves to your private store notebook. An internet connection is required.'}
-        </p>
       </form>
       {addingCustomer && (
         <Dialog title="New Customer" onClose={() => setAddingCustomer(false)}>
           <CustomerForm
             inUtang
+            initialName={customerQuery}
             onSaved={(c) => {
+              setCustomerQuery(c.name);
               setValue('customerId', c.id, { shouldValidate: true });
               setAddingCustomer(false);
             }}

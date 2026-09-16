@@ -117,8 +117,9 @@ for (const slow of [false, true]) {
       await page.goto(`/${payment ? 'payments' : 'utang'}/new?customer=${customerId}`);
       const amount = page.getByLabel(payment ? 'Payment amount' : 'Amount', { exact: true });
       await expect(amount).toBeVisible();
-      await expect(page.getByLabel('Customer', { exact: true })).toHaveValue(customerId);
-      await expect(page.locator('#customer option')).toHaveCount(501);
+      await expect(page.getByLabel('Customer', { exact: true })).toHaveValue(
+        data.customers[0].name,
+      );
       await expect(page.locator('.summary-row').filter({ hasText: 'Current utang' })).toContainText(
         payment ? '₱200,150.00' : '₱200,000.00',
       );

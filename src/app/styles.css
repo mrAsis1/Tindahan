@@ -348,6 +348,26 @@
   .customer-changes:not([open]) .when-open {
     display: none;
   }
+  .customer-suggestions {
+    margin-top: 8px;
+    border: 1px solid #dfe5de;
+    border-radius: 14px;
+    background: white;
+    overflow: hidden;
+  }
+  .customer-suggestions .paged-records {
+    gap: 0;
+  }
+  .customer-suggestions .paged-records > .button {
+    border: 0;
+    border-radius: 0;
+    justify-content: flex-start;
+    text-align: left;
+    outline-offset: -3px;
+  }
+  .customer-suggestions .paged-records > .button + .button {
+    border-top: 1px solid #dfe5de;
+  }
   .money-input {
     position: relative;
   }
