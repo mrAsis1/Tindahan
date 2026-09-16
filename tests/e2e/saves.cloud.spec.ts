@@ -125,6 +125,79 @@ async function payment(page: Page, amount = '100') {
   await page.getByLabel('Payment amount').fill(amount);
 }
 
+for (const failure of ['lost', 'refresh'] as const) {
+  test(`customer edits survive a ${failure} response without a second change`, async ({
+    page,
+    context,
+  }) => {
+    const { state, calls } = await cloud(context, failure);
+    let firstInput: unknown;
+    await context.route(
+      'https://auth-test.supabase.co/rest/v1/rpc/change_customer',
+      async (route) => {
+        const input = route.request().postDataJSON();
+        calls.ids.push(input.p_request_id);
+        if (!firstInput) {
+          firstInput = input;
+          expect(input).toMatchObject({
+            p_customer_id: customer,
+            p_expected_revision: 0,
+            p_deleted: false,
+            p_details: { name: 'Corrected cloud name', contactNumber: '', identifyingNote: '' },
+          });
+          const original = state.customers[0];
+          state.customers[0] = {
+            ...original,
+            ...input.p_details,
+            revision: 1,
+            deleted: false,
+            changes: [
+              {
+                customerId: customer,
+                expectedRevision: 0,
+                details: input.p_details,
+                deleted: false,
+                requestId: input.p_request_id,
+                before: {
+                  name: original.name,
+                  contactNumber: '',
+                  identifyingNote: '',
+                  deleted: false,
+                },
+                after: { ...input.p_details, deleted: false },
+                createdAt: '2026-09-16T00:00:00Z',
+                createdBy: owner.id,
+              },
+            ],
+          };
+          if (failure === 'lost') return route.abort('connectionreset');
+        } else expect(input).toEqual(firstInput);
+        return route.fulfill({ status: 204 });
+      },
+    );
+    await page.goto(`/customers/${customer}/edit`);
+    await page.getByLabel('Customer name', { exact: true }).fill('Corrected cloud name');
+    await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+    await expect(page.getByRole('alert').last()).toBeVisible();
+    await expect(page.getByLabel('Customer name', { exact: true })).toHaveValue(
+      'Corrected cloud name',
+    );
+    await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+    await expect(page.locator('.customer-name')).toHaveText('Corrected cloud name');
+    await page.reload();
+    await page.getByText('Show changes', { exact: true }).click();
+    await expect(page.getByRole('region', { name: 'Customer changes' })).not.toContainText(
+      'Store owner',
+    );
+    await expect(page.getByRole('region', { name: 'Customer changes' })).toContainText(
+      'Fictional customer',
+    );
+    await expect(page.getByText('Customer details edited', { exact: true })).toHaveCount(1);
+    await expect(page.locator('.amount')).toHaveText('₱100.00');
+    expect(calls.ids).toHaveLength(failure === 'lost' ? 2 : 1);
+  });
+}
+
 test('scoped form balances and confirmation history refresh after a payment', async ({
   page,
   context,
@@ -170,7 +243,8 @@ test('payment selection uses each customer balance and confirms the selected his
   });
   await payment(page, '150');
   await expect(page.getByText('Payment is higher than the remaining balance.')).toBeVisible();
-  await page.getByLabel('Customer', { exact: true }).selectOption(second);
+  await page.getByLabel('Customer', { exact: true }).fill('Second fictional');
+  await page.getByRole('button', { name: 'Second fictional customer', exact: true }).click();
   await expect(page.locator('.summary-row').filter({ hasText: 'Current utang' })).toContainText(
     '₱200.00',
   );

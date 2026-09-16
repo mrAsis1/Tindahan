@@ -424,6 +424,76 @@ describe('Scoped notebook reads', () => {
   }, 30000);
 });
 
+it('edits, flags and restores customers with owner-only, retry-safe history and preserved balances', async () => {
+  const id = entryId(950);
+  await asOwner(
+    ownerA,
+    "select public.create_customer($1::uuid, 'Maria Sants', '', 'Customer change test')",
+    [id],
+  );
+  await record(951, 'utang', 15000, '2026-09-01', id);
+  const sql =
+    'select public.change_customer($1::uuid, $2::uuid, $3::integer, $4::jsonb, $5::boolean)';
+  const details = {
+    name: 'Maria Santos',
+    contactNumber: '',
+    identifyingNote: 'Customer change test',
+  };
+  const edit = [entryId(952), id, 0, JSON.stringify(details), false];
+  await asOwner(ownerA, sql, edit);
+  await asOwner(ownerA, sql, edit);
+  await expect(
+    asOwner(ownerB, sql, [entryId(956), id, 1, JSON.stringify(details), true]),
+  ).rejects.toThrow('Customer not found');
+  await expect(
+    asOwner(ownerA, sql, [entryId(956), id, 0, JSON.stringify(details), true]),
+  ).rejects.toThrow('changed since');
+  await asOwner(ownerA, sql, [entryId(953), id, 1, JSON.stringify(details), true]);
+  await expect(record(954, 'utang', 100, '2026-09-01', id)).rejects.toThrow('Restore');
+  await record(951, 'utang', 15000, '2026-09-01', id);
+  const read = async () =>
+    notebookReadSchema.parse(
+      (
+        await asOwner<{ value: unknown }>(
+          ownerA,
+          "select public.read_notebook('customer', null, $1::uuid) as value",
+          [id],
+        )
+      ).rows[0].value,
+    );
+  const deleted = await read();
+  expect(deleted.notebook.customers[0]).toMatchObject({
+    name: 'Maria Santos',
+    deleted: true,
+    revision: 2,
+  });
+  expect(deleted.notebook.entries.map((e) => e.amountCentavos)).toEqual([15000]);
+  expect(deleted.notebook.customers[0].changes?.[0]).toMatchObject({
+    before: { name: 'Maria Sants' },
+    after: { name: 'Maria Santos' },
+    createdBy: ownerA,
+    createdAt: expect.any(String),
+  });
+  await asOwner(ownerA, sql, [entryId(955), id, 2, JSON.stringify(details), false]);
+  expect((await read()).notebook.customers[0].changes?.map((c) => c.after.deleted)).toEqual([
+    false,
+    true,
+    false,
+  ]);
+  const foreign = notebookReadSchema.parse(
+    (
+      await asOwner<{ value: unknown }>(
+        ownerB,
+        "select public.read_notebook('customer', null, $1::uuid) as value",
+        [id],
+      )
+    ).rows[0].value,
+  );
+  expect(foreign.notebook.customers).toEqual([]);
+  await db.exec('set role anon');
+  await expect(db.query(sql, edit)).rejects.toThrow(/permission denied/);
+});
+
 it('rejects normalized duplicate customer details per owner without adding audit rows', async () => {
   const values = [entryId(900), 'Fictional Duplicate Check', '', 'Near bakery'];
   const sql = 'select public.create_customer($1::uuid, $2, $3, $4)';
@@ -441,4 +511,44 @@ it('rejects normalized duplicate customer details per owner without adding audit
   );
   await asOwner(ownerA, sql, [entryId(902), values[1], '', 'Near school']);
   await asOwner(ownerB, sql, [entryId(903), ...values.slice(1)]);
+});
+
+it('allows deletion of legacy duplicates but rejects conflicting edits and malformed changes', async () => {
+  const id = entryId(980);
+  await db.exec('reset role');
+  await db.query(
+    'insert into public.customers(id, store_id, name, contact_number, identifying_note) select $1::uuid, store_id, name, contact_number, identifying_note from public.customers where id = $2::uuid',
+    [id, customerA],
+  );
+  const details = { name: 'Maria Santos', contactNumber: '', identifyingNote: '' };
+  const sql =
+    'select public.change_customer($1::uuid, $2::uuid, $3::integer, $4::jsonb, $5::boolean)';
+  await asOwner(ownerA, sql, [entryId(981), id, 0, JSON.stringify(details), true]);
+  await asOwner(ownerA, sql, [entryId(982), id, 1, JSON.stringify(details), false]);
+  await expect(
+    asOwner(ownerA, sql, [entryId(983), id, 2, JSON.stringify({ ...details, name: '' }), false]),
+  ).rejects.toThrow('customer name');
+  await expect(
+    asOwner(ownerA, sql, [entryId(983), id, 2, JSON.stringify({ ...details, extra: 'no' }), false]),
+  ).rejects.toThrow('Invalid customer details');
+  await expect(
+    asOwner(ownerA, sql, [entryId(981), id, 2, JSON.stringify(details), false]),
+  ).rejects.toThrow('different customer changes');
+  const otherId = entryId(984);
+  await asOwner(ownerA, "select public.create_customer($1::uuid, 'Distinct name for edit check')", [
+    otherId,
+  ]);
+  await expect(
+    asOwner(ownerA, sql, [entryId(985), otherId, 0, JSON.stringify(details), false]),
+  ).rejects.toThrow('already exists');
+  await expect(
+    asOwner(ownerA, 'update public.customers set deleted = true where id = $1::uuid', [id]),
+  ).rejects.toThrow('permission denied');
+  await expect(
+    asOwner(
+      ownerA,
+      'update public.audit_events set customer_change = null where customer_id = $1::uuid',
+      [id],
+    ),
+  ).rejects.toThrow('permission denied');
 });

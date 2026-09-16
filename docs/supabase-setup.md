@@ -2,6 +2,8 @@
 
 ## Current development project
 
+**16 September 2026 update:** applied `20260913090000_customer_duplicate_guard.sql` and `20260916090000_customer_changes.sql` to Tindahan Development after a dry run and 26 passing targeted tests. All five migration versions match remote history. The customer-change API is available and denies unsigned requests. This resolves the missing-migration setup error on development; other projects and frontend deployment are unchanged. See [customer changes](customer-changes.md).
+
 **13 September 2026 update:** the new `20260913090000_customer_duplicate_guard.sql` migration is tested locally but pending on hosted projects. See [duplicate-check rollout](customer-duplicates.md). The three installed versions described below are the last verified hosted migration state.
 
 **Development database updated 11 September 2026:** `20260910090000_scoped_notebook_reads.sql` is now applied and all three migration versions match hosted history. Read-only verification passed; existing records are unchanged. The matching frontend remains unpublished; the existing hosted frontend continues using the original API. See [rollout results](scoped-notebook-reads.md#development-migration-results--11-september-2026).

@@ -19,6 +19,9 @@ import { DailyRecord } from '../features/daily-record/DailyRecord';
 const NewCustomerPage = lazy(() =>
   import('../features/customers/CustomerForm').then((m) => ({ default: m.NewCustomerPage })),
 );
+const EditCustomerPage = lazy(() =>
+  import('../features/customers/CustomerForm').then((m) => ({ default: m.EditCustomerPage })),
+);
 const TransactionForm = lazy(() =>
   import('../features/transactions/TransactionForm').then((m) => ({ default: m.TransactionForm })),
 );
@@ -44,9 +47,10 @@ export function App({
   const [reset, setReset] = useState(false);
   const [resetError, setResetError] = useState('');
   const [resetting, setResetting] = useState(false);
-  const hideNav = /\/(utang|payments)\/new|\/customers\/new|\/confirmation$|\/correct$/.test(
-    location.pathname,
-  );
+  const hideNav =
+    /\/(utang|payments)\/new|\/customers\/new|\/customers\/[^/]+\/edit$|\/confirmation$|\/correct$/.test(
+      location.pathname,
+    );
   async function resetData(empty: boolean) {
     setResetting(true);
     try {
@@ -151,6 +155,7 @@ export function App({
                   <Route path="/search" element={<Customers key="search" search />} />
                   <Route path="/customers" element={<Customers key="customers" />} />
                   <Route path="/customers/new" element={<NewCustomerPage />} />
+                  <Route path="/customers/:id/edit" element={<EditCustomerPage />} />
                   <Route
                     path="/customers/:id"
                     element={<CustomerDetail key={location.pathname} />}

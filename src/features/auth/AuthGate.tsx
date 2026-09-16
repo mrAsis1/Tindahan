@@ -53,6 +53,7 @@ function SignIn({
           <input
             id="email"
             type="email"
+            placeholder="sample@gmail.com"
             required
             autoComplete="username"
             value={email}
@@ -60,24 +61,45 @@ function SignIn({
           />
         </Field>
         <Field label="Password" id="password">
-          <input
-            id="password"
-            type={showPassword ? 'text' : 'password'}
-            required
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          <div className="password-input">
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              autoComplete="current-password"
+              placeholder="Your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <button
+              className="password-toggle"
+              type="button"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-controls="password"
+              aria-pressed={showPassword}
+              onClick={() => setShowPassword((shown) => !shown)}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                <circle cx="12" cy="12" r="3" />
+                {showPassword && <path d="m3 3 18 18" />}
+              </svg>
+            </button>
+          </div>
+          <Link className="forgot-password" to={FORGOT_PATH}>
+            Forgot Password?
+          </Link>
         </Field>
-        <button
-          className="button plain"
-          type="button"
-          aria-controls="password"
-          aria-pressed={showPassword}
-          onClick={() => setShowPassword((shown) => !shown)}
-        >
-          {showPassword ? 'Hide password' : 'Show password'}
-        </button>
         <ErrorMessage message={error} />
         <button className="button" disabled={busy}>
           {busy ? 'Signing in…' : 'Sign in'}
@@ -86,9 +108,6 @@ function SignIn({
           Stay signed in on this browser. Sign out when using a shared device.
         </p>
       </form>
-      <Link className="button plain" to={FORGOT_PATH}>
-        Forgot password?
-      </Link>
     </Page>
   );
 }

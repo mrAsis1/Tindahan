@@ -70,13 +70,13 @@ test('Home defers form code and loads it when a form is opened', async ({ page, 
   expect(scriptBytes).toBeGreaterThan(0);
   expect(scriptBytes).toBeLessThan(620000);
   await page.getByRole('link', { name: '+ Add Utang', exact: true }).click();
-  await expect(page.getByLabel('Amount', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Customer', { exact: true })).toBeVisible();
   expect(scripts.some((url) => /\/TransactionForm-/.test(url))).toBe(true);
   expect(scripts.some((url) => /\/CustomerForm-/.test(url))).toBe(true);
-  await page.getByLabel('Amount', { exact: true }).fill('50');
-  await expect(page.getByLabel('Amount', { exact: true })).toHaveValue('50');
+  await page.getByLabel('Customer', { exact: true }).fill('Fictional customer');
+  await expect(page.getByLabel('Customer', { exact: true })).toHaveValue('Fictional customer');
   await page.reload();
-  await expect(page.getByLabel('Amount', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Customer', { exact: true })).toBeVisible();
   expect(unexpected).toEqual([]);
   expect(await page.evaluate(() => localStorage.getItem('tindahan.local-demo.v1'))).toBeNull();
 });
@@ -100,7 +100,7 @@ test('failed page download offers a manual reload that recovers when connected',
   expect(attempts).toBe(1);
   blocked = false;
   await page.getByRole('button', { name: 'Reload page', exact: true }).click();
-  await expect(page.getByLabel('Amount', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Customer', { exact: true })).toBeVisible();
   expect(attempts).toBe(2);
   expect(unexpected).toEqual([]);
   expect(await page.evaluate(() => localStorage.getItem('tindahan.local-demo.v1'))).toBeNull();

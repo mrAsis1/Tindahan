@@ -44,6 +44,7 @@ export function viewForRoute(path: string, search: string): NotebookView {
   if (route === '/home' || route === '/') return { kind: 'home', day: storeNow().date };
   if (['/customers', '/search', '/customers/new', '/utang/new', '/payments/new'].includes(route))
     return { kind: 'directory' };
+  if (/^\/customers\/[^/]+\/edit$/i.test(path)) return { kind: 'directory' };
   if (/^\/transactions\/[^/]+\/confirmation$/i.test(path)) {
     const customerId = new URLSearchParams(search).get('customer');
     if (customerId) return { kind: 'customer', customerId };

@@ -1,6 +1,19 @@
-import type { CorrectionInput, LedgerEntry, NewCustomer, NewEntry, StoreData } from '../../types';
+import type {
+  CorrectionInput,
+  CustomerChangeInput,
+  LedgerEntry,
+  NewCustomer,
+  NewEntry,
+  StoreData,
+} from '../../types';
 import { assertLedger } from '../ledger';
-import { correctionSchema, customerSchema, newEntrySchema, storeSchema } from '../validation';
+import {
+  correctionSchema,
+  customerChangeSchema,
+  customerSchema,
+  newEntrySchema,
+  storeSchema,
+} from '../validation';
 import { storeNow } from '../dates';
 import { createSeed } from './seed';
 import { sameCustomer, duplicateCustomerMessage } from '../customerIdentity';
@@ -64,12 +77,75 @@ export function createLocalRepository(storage: Pick<Storage, 'getItem' | 'setIte
         return customer;
       });
     },
+    async changeCustomer(input: CustomerChangeInput, requestId: string) {
+      return write(() => {
+        const values = customerChangeSchema.parse(input);
+        if (!requestId) throw new Error('A save ID is required.');
+        const data = read();
+        const customer = data.customers.find((c) => c.id === values.customerId);
+        if (!customer) throw new Error('Customer not found in your store.');
+        const prior = data.customers
+          .flatMap((c) => c.changes ?? [])
+          .find((c) => c.requestId === requestId);
+        if (prior) {
+          if (
+            prior.customerId !== values.customerId ||
+            prior.expectedRevision !== values.expectedRevision ||
+            prior.deleted !== values.deleted ||
+            JSON.stringify(prior.details) !== JSON.stringify(values.details)
+          )
+            throw new Error('This save ID was already used for different customer changes.');
+          return;
+        }
+        if (
+          data.customers.some((c) => c.id === requestId) ||
+          data.entries.some((e) => e.requestId === requestId) ||
+          data.corrections?.some((c) => c.requestId === requestId)
+        )
+          throw new Error('This save ID was already used.');
+        if ((customer.revision ?? 0) !== values.expectedRevision)
+          throw new Error(
+            'This customer changed since you opened the form. Reopen it to see the latest details.',
+          );
+        if (
+          JSON.stringify(customerSchema.parse(customer)) !== JSON.stringify(values.details) &&
+          data.customers.some((c) => c.id !== customer.id && sameCustomer(c, values.details))
+        )
+          throw new Error(duplicateCustomerMessage);
+        const before = { ...customerSchema.parse(customer), deleted: customer.deleted ?? false };
+        const after = { ...values.details, deleted: values.deleted };
+        if (JSON.stringify(before) === JSON.stringify(after)) return;
+        const change = {
+          ...values,
+          requestId,
+          before,
+          after,
+          createdAt: new Date().toISOString(),
+          createdBy: 'local-demo',
+        };
+        persist({
+          ...data,
+          customers: data.customers.map((c) =>
+            c.id === customer.id
+              ? {
+                  ...c,
+                  ...after,
+                  revision: values.expectedRevision + 1,
+                  changes: [...(c.changes ?? []), change],
+                }
+              : c,
+          ),
+        });
+      });
+    },
     async recordEntry(input: NewEntry, requestId: string) {
       return write(() => {
         const values = newEntrySchema.parse(input);
         const data = read();
         if (data.corrections?.some((c) => c.requestId === requestId))
           throw new Error('This save ID was already used for a correction.');
+        if (data.customers.some((c) => c.changes?.some((change) => change.requestId === requestId)))
+          throw new Error('This save ID was already used for a customer change.');
         const existing = data.entries.find((e) => e.requestId === requestId);
         if (existing) {
           if (
@@ -78,6 +154,8 @@ export function createLocalRepository(storage: Pick<Storage, 'getItem' | 'setIte
             throw new Error('This save ID was already used for different transaction details.');
           return existing;
         }
+        if (data.customers.find((c) => c.id === values.customerId)?.deleted)
+          throw new Error('Restore this deleted customer before recording new entries.');
         const entry: LedgerEntry = {
           ...values,
           id: requestId,
@@ -95,6 +173,8 @@ export function createLocalRepository(storage: Pick<Storage, 'getItem' | 'setIte
       return write(() => {
         const values = correctionSchema.parse(input);
         const data = read();
+        if (data.customers.some((c) => c.changes?.some((change) => change.requestId === requestId)))
+          throw new Error('This save ID was already used for a customer change.');
         const retry = data.corrections?.find((c) => c.requestId === requestId);
         if (retry) {
           if (

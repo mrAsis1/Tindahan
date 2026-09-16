@@ -1,7 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { authOptions } from './authOptions';
-import { correctionSchema, customerSchema, newEntrySchema, storeSchema } from '../validation';
+import {
+  correctionSchema,
+  customerChangeSchema,
+  customerSchema,
+  savedCustomerSchema,
+  newEntrySchema,
+  storeSchema,
+} from '../validation';
 import type { Repository } from './repository';
 import { recoveryLocation } from '../../features/auth/recoveryHelpers';
 import { notebookReadSchema, type NotebookView, type NotebookRead } from '../notebookReads';
@@ -33,7 +40,7 @@ export const supabase =
 const snapshotSchema = storeSchema.extend({
   store: z.object({ id: z.uuid(), name: z.string() }).nullable(),
 });
-const customerResult = customerSchema.extend({ id: z.uuid(), createdAt: z.iso.datetime() });
+const customerResult = savedCustomerSchema.extend({ id: z.uuid() });
 const entryResult = storeSchema.shape.entries.element;
 
 function client() {
@@ -50,6 +57,17 @@ function rpcError(message: string, code?: string) {
 }
 
 export const supabaseRepository: Repository = {
+  async changeCustomer(input, requestId) {
+    const values = customerChangeSchema.parse(input);
+    const { error } = await client().rpc('change_customer', {
+      p_request_id: requestId,
+      p_customer_id: values.customerId,
+      p_expected_revision: values.expectedRevision,
+      p_details: values.details,
+      p_deleted: values.deleted,
+    });
+    if (error) throw rpcError(error.message, error.code);
+  },
   async correctEntry(input, requestId) {
     const values = correctionSchema.parse(input);
     const { error } = await client().rpc('correct_entry', {

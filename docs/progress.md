@@ -1,5 +1,83 @@
 # Tindahan progress
 
+## Daily row dates and release preparation — 16 September 2026
+
+- Daily Record transaction rows show their time without repeating the selected date. Other entry lists retain dates. Build, formatting and four mobile/desktop daily-record checks passed.
+- Before this display change, release verification passed all 69 unit/database tests, 92 browser tests and 12 performance checks. Startup checks now use the customer input because transaction amounts require customer selection. Formatting checks for the app and GitHub files passed after normalizing local line endings.
+- Release changes are split by purpose: coding instructions, login, audited customer management, customer selection, grouped lists, Home navigation, startup tests and daily row dates. The initial Git approval limit was cleared when the user resumed the release. Local checks above passed; a GitHub push alone does not verify the hosted deployment.
+
+## Home daily-record shortcut removed — 16 September 2026
+
+- Removed the View daily record button from Home. Daily Record remains available in navigation.
+- Build and changed-file formatting passed. No deployment is included.
+
+## Grouped daily and customer lists — 16 September 2026
+
+- Daily Record, Search and Customers display their entries in one card with divider lines. Existing links, filters, pagination and empty states are preserved.
+- Build, changed-file formatting and all 16 targeted mobile/desktop checks passed, including customer search, daily pagination, date changes, deleted-customer management and narrow screens. No deployment is included.
+
+## Grouped recent activity — 16 September 2026
+
+- Home recent activity shares one card with divider lines, reusing the existing entry links and empty state.
+- Build, changed-file formatting and six mobile/desktop checks passed, covering Home, empty notebooks and narrow screens. No deployment is included.
+
+## Grouped customer change history — 16 September 2026
+
+- Customer changes share one card with divider lines between entries. The Show changes / Hide changes toggle, timestamps, before/after values and pagination are preserved.
+- Build, changed-file formatting and both mobile/desktop customer-history checks passed. No deployment is included.
+
+## Active customer suggestions only — 16 September 2026
+
+- Add Utang and Add Payment exclude deleted customers from the initial list and typed search results. Deleted records remain manageable under Customers → Deleted.
+- Build, changed-file formatting and all 10 targeted mobile/desktop checks passed, including deletion, hidden suggestions and restoration. No deployment is included.
+
+## Existing customers on transaction forms — 16 September 2026
+
+- Add Utang and Add Payment show the existing customer list before typing, using the shared suggestion box and pagination. Typing filters it; selecting a customer opens transaction fields; clearing the input restores the list.
+- Build and all 28 mobile/desktop flow checks passed, including a new check that failed before the change. Changed-file formatting passed. No deployment is included.
+
+## Searchable payment customers — 16 September 2026
+
+- Add Payment reuses the customer-name input and grouped suggestion box. Payment fields appear after selecting an active customer; changing the name hides fields and preserves the draft.
+- Existing balance validation, overpayment rejection and save-retry protections remain in place.
+- Build, changed-file formatting and all 50 mobile/desktop flow and cloud-save browser checks passed. The performance form assertion was updated; performance measurements were not rerun. No database migration or deployment is included.
+
+## Grouped customer suggestions — 16 September 2026
+
+- Utang customer suggestions share one bordered box with divider rows. **Add a new customer** is hidden when matches exist or a customer is selected, and appears when no matches exist.
+- Build and all six targeted mobile/desktop customer selection, creation and duplicate checks passed. No database migration or deployment is included.
+
+## Customer-first utang entry — 16 September 2026
+
+- Removed the suggestion helper sentence and **Use existing:** prefixes. Suggestions display the customer name and distinguishing details.
+- Utang amount, description, date and saving are hidden until an active customer is selected or added. Unknown names offer **Add a new customer**, then reveal utang entry after confirmation. Changing the name hides the fields and preserves the draft. Payment flow is unchanged.
+- Build and changed-file formatting passed. All 24 mobile/desktop flow checks passed, including one targeted rerun after an aborted page navigation. Checks cover customer-first entry and draft restoration. No database migration or deployment is included.
+
+## Searchable utang customers and change toggle — 16 September 2026
+
+- The native customer-history disclosure now switches between **Show changes** and **Hide changes**.
+- Utang uses a customer-name input with existing-customer suggestions, including distinguishing contact details. Typing another name clears the selected customer ID. Deleted matches link to their history for restoration.
+- The user chose confirmation through **Add a new customer** for new names. That form receives the typed name and preserves the utang draft. Payment selection keeps its existing dropdown.
+- Build, changed-file formatting and all 50 targeted mobile/desktop browser tests passed. Updated screen tests cover selection, clearing stale selections, keyboard activation and confirmed creation. The performance form assertion now expects the displayed name for utang; performance measurements were not rerun. No database migration or deployment is included.
+
+## Collapsible customer changes — 16 September 2026
+
+- Customer changes are hidden by default behind a native **Show changes** disclosure. Removed the owner label beside the displayed date/time; audit records remain unchanged.
+- Build and all six targeted mobile/desktop customer and cloud-retry checks passed. Frontend deployment remains pending; no database update is required.
+
+## Customer-change database setup fixed — 16 September 2026
+
+- The reported setup error matched two missing migrations on the app's linked Tindahan Development project (`bzkbndvmspnyjkuyaudr`). The dry run listed only the duplicate guard and customer-change migration.
+- Re-ran all 26 targeted customer/database tests, then applied both migrations. All five local/remote versions match; the new API returns permission denied for unsigned requests, confirming availability and protected access.
+- No customer or ledger records were edited during verification. A signed-in hosted save remains unverified. Other hosted projects and frontend deployment are unchanged. See [rollout details](customer-changes.md).
+
+## Customer edits and recoverable deletion — 16 September 2026
+
+- Added customer detail editing, confirmed deletion flags, a Deleted filter, restoration and visible before/after change history with owner and timestamps. Customer IDs, ledger history and all balances are preserved.
+- Reused customer forms, pagination, dialogs and the owner-scoped audit/save patterns. New entries require restoration; stale forms, conflicting retries and duplicate edits are rejected. Existing duplicate records can still be deleted/restored.
+- Followed TDD at the user-confirmed screen and local/cloud save boundaries. Build, all 69 unit/database tests, and all 88 mobile/desktop browser tests pass. Changed-file formatting passes; full-repository formatting flags four untouched files (listed in the customer-changes guide).
+- Prepared `20260916090000_customer_changes.sql`; hosted migrations and frontend deployment remain pending. Prior login styling and instruction-file changes are preserved. See [customer changes](customer-changes.md).
+
 ## Password visibility and remembered login — 15 September 2026
 
 - Added an accessible Show password / Hide password button to sign-in, with passwords hidden initially and no form submission when toggling.

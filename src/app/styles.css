@@ -344,6 +344,43 @@
     display: block;
     margin-bottom: 8px;
   }
+  .customer-changes[open] .when-closed,
+  .customer-changes:not([open]) .when-open {
+    display: none;
+  }
+  .record-list .paged-records {
+    gap: 0;
+  }
+  .record-list .record,
+  .recent-activity .record {
+    border-radius: 0;
+  }
+  .record-list .record + .record,
+  .recent-activity .record + .record,
+  .customer-changes article + article {
+    border-top: 1px solid #dfe5de;
+    padding-top: 14px;
+  }
+  .customer-suggestions {
+    margin-top: 8px;
+    border: 1px solid #dfe5de;
+    border-radius: 14px;
+    background: white;
+    overflow: hidden;
+  }
+  .customer-suggestions .paged-records {
+    gap: 0;
+  }
+  .customer-suggestions .paged-records > .button {
+    border: 0;
+    border-radius: 0;
+    justify-content: flex-start;
+    text-align: left;
+    outline-offset: -3px;
+  }
+  .customer-suggestions .paged-records > .button + .button {
+    border-top: 1px solid #dfe5de;
+  }
   .money-input {
     position: relative;
   }
@@ -354,6 +391,37 @@
   }
   .money-input input {
     padding-left: 30px;
+  }
+  .password-input {
+    position: relative;
+  }
+  .password-input input {
+    padding-right: 48px;
+  }
+  .password-toggle {
+    position: absolute;
+    right: 2px;
+    top: 2px;
+    bottom: 2px;
+    width: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    color: #66746c;
+  }
+  .forgot-password {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: fit-content;
+    min-height: 44px;
+    margin-left: auto;
+    font-size: 14px;
+    font-weight: 600;
+    color: #66746c;
+  }
+  .forgot-password:hover {
+    text-decoration: underline;
   }
   .back {
     display: inline-flex;

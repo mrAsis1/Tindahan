@@ -32,21 +32,20 @@ export function Home() {
         <SummaryRow label="New utang" value={money(totals.utang)} tone="utang" />
         <SummaryRow label="Payments received" value={money(totals.payments)} tone="payment" />
       </section>
-      <h2>Recent activity</h2>
-      {recent.length ? (
-        recent.map((entry) => (
-          <EntryRow
-            key={entry.id}
-            entry={entry}
-            name={customers.find((c) => c.id === entry.customerId)!.name}
-          />
-        ))
-      ) : (
-        <Empty>No entries yet. Add a customer and their first utang to get started.</Empty>
-      )}
-      <Link className="button plain" to="/daily-record">
-        View daily record →
-      </Link>
+      <section className="card recent-activity" aria-label="Recent activity">
+        <h2>Recent activity</h2>
+        {recent.length ? (
+          recent.map((entry) => (
+            <EntryRow
+              key={entry.id}
+              entry={entry}
+              name={customers.find((c) => c.id === entry.customerId)!.name}
+            />
+          ))
+        ) : (
+          <Empty>No entries yet. Add a customer and their first utang to get started.</Empty>
+        )}
+      </section>
       {backendMode === 'local' && (
         <p className="small muted">
           Fictional starting records are dated 25 Aug–5 Sep 2026. Choose 5 September in Daily Record

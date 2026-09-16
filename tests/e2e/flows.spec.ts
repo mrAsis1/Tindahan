@@ -28,9 +28,23 @@ test('Home → Search → customer → partial payment → confirmation → pers
 
 test('Home → Add Utang → existing customer → save → updated balance', async ({ page }) => {
   await page.getByRole('link', { name: '+ Add Utang', exact: true }).click();
-  await page.getByLabel('Customer', { exact: true }).selectOption('customer-0');
+  await page.getByLabel('Customer', { exact: true }).fill('cruz');
+  await expect(
+    page.getByRole('group', { name: 'Matching customers', exact: true }).getByRole('button'),
+  ).toHaveCount(2);
+  await expect(page.getByRole('button', { name: '+ Add a new customer' })).not.toBeVisible();
+  await page.getByLabel('Customer', { exact: true }).fill('maria');
+  await page.getByRole('button', { name: /^Maria Santos/ }).click();
+  await expect(page.getByRole('button', { name: '+ Add a new customer' })).not.toBeVisible();
   await page.getByLabel('Amount', { exact: true }).fill('150');
   await page.getByLabel('Item / description (optional)').fill('Rice & canned goods');
+  await page.getByLabel('Customer', { exact: true }).fill('Unknown customer');
+  await expect(page.getByRole('button', { name: '+ Add a new customer' })).toBeVisible();
+  await expect(page.getByLabel('Amount', { exact: true })).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save utang', exact: true })).not.toBeVisible();
+  await page.getByLabel('Customer', { exact: true }).fill('maria');
+  await page.getByRole('button', { name: /^Maria Santos/ }).press('Enter');
+  await expect(page.getByLabel('Amount', { exact: true })).toHaveValue('150');
   await page.getByRole('button', { name: 'Save utang', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Utang saved', exact: true })).toBeVisible();
   await expect(page.getByText('₱1,000.00', { exact: true })).toBeVisible();
@@ -38,25 +52,70 @@ test('Home → Add Utang → existing customer → save → updated balance', as
   await expect(page.locator('.hero .amount')).toHaveText('₱5,000.00');
 });
 
-test('creates a new customer within utang without losing the draft', async ({ page }) => {
+test('lists existing customers before typing on utang and payment forms', async ({ page }) => {
+  for (const path of ['/utang/new', '/payments/new']) {
+    await page.goto(path);
+    await expect(page.getByLabel('Customer', { exact: true })).toHaveValue('');
+    await expect(page.getByRole('button', { name: /^Maria Santos/ })).toBeVisible();
+    await page.getByRole('button', { name: /^Maria Santos/ }).click();
+    await expect(
+      page.getByLabel(path === '/utang/new' ? 'Amount' : 'Payment amount', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('group', { name: 'Matching customers', exact: true }),
+    ).not.toBeVisible();
+    await page.getByLabel('Customer', { exact: true }).fill('');
+    await expect(page.getByRole('button', { name: /^Maria Santos/ })).toBeVisible();
+  }
+});
+
+test('requires adding a new customer before entering their utang', async ({ page }) => {
   await page.getByRole('link', { name: '+ Add Utang', exact: true }).click();
-  await page.getByLabel('Amount', { exact: true }).fill('150.25');
-  await page.getByLabel('Item / description (optional)').fill('Milk & bread');
+  await page.getByLabel('Customer', { exact: true }).fill('Rosa Garcia');
+  await expect(page.getByLabel('Amount', { exact: true })).not.toBeVisible();
+  await expect(page.getByLabel('Item / description (optional)')).not.toBeVisible();
+  await expect(page.getByLabel('Date', { exact: true })).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save utang', exact: true })).not.toBeVisible();
+  await expect(
+    page.getByText('Choose a suggestion, or use Add a new customer below.', { exact: true }),
+  ).not.toBeVisible();
   await page.getByRole('button', { name: '+ Add a new customer' }).click();
-  await page.getByRole('dialog').getByLabel('Customer name').fill('Rosa Garcia');
+  await expect(page.getByRole('dialog').getByLabel('Customer name')).toHaveValue('Rosa Garcia');
   await page.getByRole('dialog').getByLabel('Contact number (optional)').fill('0918 555 0124');
   await page.getByRole('button', { name: 'Save customer & add utang' }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
-  await expect(page.getByLabel('Amount', { exact: true })).toHaveValue('150.25');
-  await expect(page.getByLabel('Item / description (optional)')).toHaveValue('Milk & bread');
-  await expect(
-    page.getByLabel('Customer', { exact: true }).locator('option:checked'),
-  ).toContainText('Rosa Garcia');
+  await page.getByLabel('Amount', { exact: true }).fill('150.25');
+  await page.getByLabel('Item / description (optional)').fill('Milk & bread');
+  await expect(page.getByLabel('Customer', { exact: true })).toHaveValue('Rosa Garcia');
   await page.getByRole('button', { name: 'Save utang', exact: true }).click();
   await page.getByRole('link', { name: 'View customer history' }).click();
   await expect(page.locator('.amount')).toHaveText('₱150.25');
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Rosa Garcia' })).toBeVisible();
+});
+
+test('searches payment customers and hides payment fields until one is selected', async ({
+  page,
+}) => {
+  await page.goto('/payments/new');
+  await expect(page.getByLabel('Payment amount')).not.toBeVisible();
+  await page.getByLabel('Customer', { exact: true }).fill('cruz');
+  await expect(
+    page.getByRole('group', { name: 'Matching customers', exact: true }).getByRole('button'),
+  ).toHaveCount(2);
+  await page.getByLabel('Customer', { exact: true }).fill('maria');
+  await page.getByRole('button', { name: /^Maria Santos/ }).press('Enter');
+  await page.getByLabel('Payment amount').fill('50');
+  await page.getByLabel('Customer', { exact: true }).fill('Unknown customer');
+  await expect(page.getByLabel('Payment amount')).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'Record payment', exact: true })).not.toBeVisible();
+  await page.getByLabel('Customer', { exact: true }).fill('maria');
+  await page.getByRole('button', { name: /^Maria Santos/ }).click();
+  await expect(page.getByLabel('Payment amount')).toHaveValue('50');
+  await page.getByRole('button', { name: 'Record payment', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Payment recorded' })).toBeVisible();
+  await page.getByRole('link', { name: 'View customer history' }).click();
+  await expect(page.locator('.amount')).toHaveText('₱800.00');
 });
 
 test('rejects invalid and excessive payments, then accepts a full payment', async ({ page }) => {
@@ -211,17 +270,16 @@ test('Home labels and duplicate customer selection preserve the existing noteboo
   await page.getByLabel('Customer name').fill('  fictional   DUPLICATE ');
   await page.getByRole('button', { name: 'Save customer', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('already exists');
-  await page
-    .getByRole('button', { name: 'Use existing: Fictional Duplicate', exact: true })
-    .click();
+  await page.getByRole('button', { name: 'Fictional Duplicate', exact: true }).click();
   await expect(page).toHaveURL(original);
   await page.goto('/utang/new');
+  await page.getByLabel('Customer', { exact: true }).fill('Fictional Duplicate');
+  await page.getByRole('button', { name: 'Fictional Duplicate', exact: true }).click();
   await page.getByLabel('Amount', { exact: true }).fill('150');
+  await page.getByLabel('Customer', { exact: true }).fill('New person');
   await page.getByRole('button', { name: /New customer/i }).click();
   await page.getByRole('dialog').getByLabel('Customer name').fill('Fictional Duplicate');
-  await page
-    .getByRole('button', { name: 'Use existing: Fictional Duplicate', exact: true })
-    .click();
+  await page.getByRole('button', { name: 'Fictional Duplicate', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await expect(page.getByLabel('Amount', { exact: true })).toHaveValue('150');
   await page.goto('/customers/new');
