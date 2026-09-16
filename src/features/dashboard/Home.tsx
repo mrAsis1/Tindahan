@@ -1,10 +1,10 @@
-import { Link } from 'react-router-dom';
-import { useData, useReadTotals } from '../../app/data';
-import { Empty, EntryRow, Page, SummaryRow } from '../../components/ui';
-import { dateLabel, storeNow } from '../../lib/dates';
-import { chronological } from '../../lib/ledger';
-import { money } from '../../lib/money';
-import { backendMode } from '../../lib/api/supabase';
+import { Link } from "react-router-dom";
+import { useData, useReadTotals } from "../../app/data";
+import { Empty, EntryRow, Page, SummaryRow } from "../../components/ui";
+import { dateLabel, storeNow } from "../../lib/dates";
+import { chronological } from "../../lib/ledger";
+import { money } from "../../lib/money";
+import { backendMode } from "../../lib/api/supabase";
 
 export function Home() {
   const { entries, customers } = useData();
@@ -29,28 +29,40 @@ export function Home() {
       </div>
       <section className="card">
         <h2>Today’s Overview</h2>
-        <SummaryRow label="New utang" value={money(totals.utang)} tone="utang" />
-        <SummaryRow label="Payments received" value={money(totals.payments)} tone="payment" />
+        <SummaryRow
+          label="New utang"
+          value={money(totals.utang)}
+          tone="utang"
+        />
+        <SummaryRow
+          label="Payments received"
+          value={money(totals.payments)}
+          tone="payment"
+        />
       </section>
-      <h2>Recent activity</h2>
-      {recent.length ? (
-        recent.map((entry) => (
-          <EntryRow
-            key={entry.id}
-            entry={entry}
-            name={customers.find((c) => c.id === entry.customerId)!.name}
-          />
-        ))
-      ) : (
-        <Empty>No entries yet. Add a customer and their first utang to get started.</Empty>
-      )}
+      <section className="card recent-activity" aria-label="Recent activity">
+        <h2>Recent activity</h2>
+        {recent.length ? (
+          recent.map((entry) => (
+            <EntryRow
+              key={entry.id}
+              entry={entry}
+              name={customers.find((c) => c.id === entry.customerId)!.name}
+            />
+          ))
+        ) : (
+          <Empty>
+            No entries yet. Add a customer and their first utang to get started.
+          </Empty>
+        )}
+      </section>
       <Link className="button plain" to="/daily-record">
         View daily record →
       </Link>
-      {backendMode === 'local' && (
+      {backendMode === "local" && (
         <p className="small muted">
-          Fictional starting records are dated 25 Aug–5 Sep 2026. Choose 5 September in Daily Record
-          to explore them.
+          Fictional starting records are dated 25 Aug–5 Sep 2026. Choose 5
+          September in Daily Record to explore them.
         </p>
       )}
     </Page>

@@ -152,14 +152,16 @@ export function DailyRecord() {
       </section>
       <h2>{summary.entries.length} transactions · latest first</h2>
       {summary.entries.length ? (
-        <PaginatedList
-          key={day}
-          items={summary.entries}
-          label="Daily transactions"
-          renderItem={(entry) => (
-            <EntryRow key={entry.id} entry={entry} name={names.get(entry.customerId)!} />
-          )}
-        />
+        <div className="card record-list">
+          <PaginatedList
+            key={day}
+            items={summary.entries}
+            label="Daily transactions"
+            renderItem={(entry) => (
+              <EntryRow key={entry.id} entry={entry} name={names.get(entry.customerId)!} />
+            )}
+          />
+        </div>
       ) : (
         <Empty>No transactions on this day.</Empty>
       )}

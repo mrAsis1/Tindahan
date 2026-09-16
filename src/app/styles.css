@@ -1,11 +1,11 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   --color-paper: #faf7f2;
   --color-ink: #20352c;
   --color-store-green: #176445;
   --color-store-orange: #ab451f;
-  --font-sans: "Inter", Arial, sans-serif;
+  --font-sans: 'Inter', Arial, sans-serif;
 }
 
 @layer base {
@@ -348,6 +348,19 @@
   .customer-changes:not([open]) .when-open {
     display: none;
   }
+  .record-list .paged-records {
+    gap: 0;
+  }
+  .record-list .record,
+  .recent-activity .record {
+    border-radius: 0;
+  }
+  .record-list .record + .record,
+  .recent-activity .record + .record,
+  .customer-changes article + article {
+    border-top: 1px solid #dfe5de;
+    padding-top: 14px;
+  }
   .customer-suggestions {
     margin-top: 8px;
     border: 1px solid #dfe5de;
@@ -466,8 +479,8 @@
     padding: 8px 16px;
     color: var(--color-store-green);
   }
-  .chips button[aria-pressed="true"],
-  .calendar button[aria-pressed="true"] {
+  .chips button[aria-pressed='true'],
+  .calendar button[aria-pressed='true'] {
     background: var(--color-store-green);
     color: white;
   }
