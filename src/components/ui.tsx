@@ -105,10 +105,12 @@ export function EntryRow({
   entry,
   name,
   runningBalance,
+  showDate = true,
 }: {
   entry: LedgerEntry;
   name?: string;
   runningBalance?: number;
+  showDate?: boolean;
 }) {
   const payment = entry.type === 'payment';
   const label = payment
@@ -122,7 +124,8 @@ export function EntryRow({
         <strong>{name ?? (entry.description || label)}</strong>
         <p>
           {name ? `${entry.description || label} · ` : ''}
-          {dateLabel(entry.effectiveDate)} · {timeLabel(entry.effectiveTime)}
+          {showDate && `${dateLabel(entry.effectiveDate)} · `}
+          {timeLabel(entry.effectiveTime)}
         </p>
         {runningBalance !== undefined && <p>Balance: {money(runningBalance)}</p>}
         {entry.status === 'voided' && (

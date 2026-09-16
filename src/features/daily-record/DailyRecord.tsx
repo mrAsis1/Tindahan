@@ -158,7 +158,12 @@ export function DailyRecord() {
             items={summary.entries}
             label="Daily transactions"
             renderItem={(entry) => (
-              <EntryRow key={entry.id} entry={entry} name={names.get(entry.customerId)!} />
+              <EntryRow
+                key={entry.id}
+                entry={entry}
+                name={names.get(entry.customerId)!}
+                showDate={false}
+              />
             )}
           />
         </div>
